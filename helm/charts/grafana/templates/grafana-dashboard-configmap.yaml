@@ -1,0 +1,76 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ebpf-ai-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/part-of: ebpf-ai
+    grafana_dashboard: "1"
+data:
+  dashboard.json: |
+    {
+      "id": null,
+      "title": "🛡️ Security Threats Dashboard",
+      "tags": ["security"],
+      "style": "dark",
+      "panels": [
+        {
+          "id": 1,
+          "title": "👤 Suspicious Users",
+          "type": "table",
+          "targets": [
+            {
+              "expr": "ml_detector_threats_total{threat_type=~\".*user.*|.*insider.*\"}", 
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "🔍 Malicious Processes", 
+          "type": "table",
+          "targets": [
+            {
+              "expr": "ml_detector_threats_total{threat_type=~\".*process.*|.*suspicious.*\"}", 
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+        },
+        {
+          "id": 3,
+          "title": "🌐 Attacking IPs",
+          "type": "table",
+          "targets": [
+            {
+              "expr": "ml_detector_ip_packet_count", 
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+        },
+        {
+          "id": 4,
+          "title": "📊 Threat Levels",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "sum by (confidence_level) (ml_detector_threats_total)",
+              "legendFormat": "{{ "{{" }}confidence_level{{ "}}" }}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+        }
+      ],
+      "time": {"from": "now-1h", "to": "now"},
+      "refresh": "30s"
+    }
+{{- end }}

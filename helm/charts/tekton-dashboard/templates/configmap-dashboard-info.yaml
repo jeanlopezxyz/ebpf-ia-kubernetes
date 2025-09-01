@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-info
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "tekton-dashboard.labels" . | indent 4 }}
+data:
+  version: {{ default .Chart.AppVersion .Values.image.tag | quote }}

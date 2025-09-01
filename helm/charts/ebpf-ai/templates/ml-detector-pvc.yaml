@@ -1,0 +1,21 @@
+{{- if .Values.mlDetector.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.mlDetector.name }}-models
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.mlDetector.name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: ml-detector-storage
+    app.kubernetes.io/part-of: ebpf-ai
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .Values.mlDetector.persistence.size | default "1Gi" }}
+  {{- if .Values.mlDetector.persistence.storageClass }}
+  storageClassName: {{ .Values.mlDetector.persistence.storageClass }}
+  {{- end }}
+{{- end }}

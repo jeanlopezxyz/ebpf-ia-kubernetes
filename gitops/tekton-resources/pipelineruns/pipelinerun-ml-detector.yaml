@@ -1,0 +1,52 @@
+# pipelineRuns enabled by default
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: ml-detector-build-working
+  namespace: ebpf-security
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    pipeline.tekton.dev/affinity-assistant: "disabled"
+    pipeline.tekton.dev/disable-affinity-assistant: "true"
+  labels:
+    app.kubernetes.io/name: tekton-ci
+    app.kubernetes.io/instance: tekton-ci
+    app.kubernetes.io/component: pipelinerun-ml-detector
+    app.kubernetes.io/part-of: ebpf-ai-system
+spec:
+  pipelineRef:
+    name: application-build-ci
+  taskRunTemplate:
+    serviceAccountName: pipeline-sa
+    podTemplate:
+      securityContext:
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        kubernetes.io/hostname: labjp
+  workspaces:
+    - name: shared-data
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 3Gi
+    - name: dockerconfig
+      secret:
+        secretName: quay-credentials
+  params:
+    - name: git-url
+      value: https://github.com/jeanlopezxyz/ebpf-ia-gitops.git
+    - name: git-revision
+      value: main
+    - name: image-registry
+      value: quay.io
+    - name: image-name
+      value: jealopez/ml-detector
+    - name: dockerfile-path
+      value: ./applications/ml-detector/Dockerfile
+    - name: context-path
+      value: ./applications/ml-detector

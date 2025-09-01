@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.mlDetector.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.mlDetector.name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: ml-detector
+    app.kubernetes.io/part-of: ebpf-ai
+    app.kubernetes.io/version: {{ .Values.mlDetector.image.tag | default .Values.global.imageTag | quote }}
+spec:
+  replicas: {{ .Values.mlDetector.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.mlDetector.name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.mlDetector.name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: ml-detector
+        app.kubernetes.io/part-of: ebpf-ai
+      annotations:
+        {{- if and .Values.metrics.addPrometheusAnnotations (not .Values.serviceMonitor.enabled) }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.mlDetector.service.targetPort }}"
+        prometheus.io/path: "/metrics"
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "ebpf-ai.mlDetector.serviceAccountName" . }}
+      securityContext:
+        fsGroup: 1000  # detector group
+        runAsUser: 1000 # detector user
+        runAsGroup: 1000
+      {{- if .Values.mlDetector.persistence.enabled }}
+      initContainers:
+      - name: setup-data-permissions
+        image: alpine:3.18
+        command: ['sh', '-c']
+        args:
+        - |
+          echo "Setting up /data/models permissions..."
+          mkdir -p /data/models
+          chown -R 1000:1000 /data/models
+          chmod -R 755 /data/models
+          echo "Permissions set successfully: $(ls -la /data/)"
+        volumeMounts:
+        - name: model-storage
+          mountPath: /data/models
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+      {{- end }}
+      containers:
+      - name: {{ .Values.mlDetector.name }}
+        {{- if .Values.global.useInternalRegistry }}
+        image: "{{ .Values.global.registry }}/{{ .Values.mlDetector.image.repository }}:{{ .Values.mlDetector.image.tag | default .Values.global.imageTag }}"
+        {{- else }}
+        image: "{{ .Values.mlDetector.image.repository }}:{{ .Values.mlDetector.image.tag }}"
+        {{- end }}
+        imagePullPolicy: {{ .Values.mlDetector.image.pullPolicy }}
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+        ports:
+        - name: http
+          containerPort: {{ .Values.mlDetector.service.targetPort }}
+          protocol: TCP
+        env:
+        {{- range .Values.mlDetector.env }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.mlDetector.resources | nindent 10 }}
+        livenessProbe:
+          {{- toYaml .Values.mlDetector.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.mlDetector.readinessProbe | nindent 10 }}
+        {{- if .Values.mlDetector.persistence.enabled }}
+        volumeMounts:
+        - name: model-storage
+          mountPath: /data/models
+        {{- end }}
+      {{- if .Values.mlDetector.persistence.enabled }}
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: {{ .Values.mlDetector.name }}-models
+      {{- end }}

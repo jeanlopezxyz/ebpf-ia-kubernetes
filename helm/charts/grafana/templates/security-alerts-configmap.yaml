@@ -1,0 +1,122 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-security-alerts
+  namespace: grafana
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: alerts
+    app.kubernetes.io/part-of: ebpf-ai
+data:
+  security-alerts.yaml: |
+    apiVersion: 1
+    
+    groups:
+      - name: "security-threats"
+        interval: "30s"
+        rules:
+          - alert: "Critical User Threat"
+            expr: "rate(ml_detector_threats_total{threat_type=~\".*insider.*|.*privilege.*\", confidence_level=\"high\"}[5m]) > 0"
+            for: "0s"
+            labels:
+              severity: "critical"
+              category: "user_behavior"
+            annotations:
+              summary: "🔴 Critical insider threat detected"
+              description: "User {{ "{{" }}$labels.source_ip{{ "}}" }} triggered {{ "{{" }}$labels.threat_type{{ "}}" }} with high confidence"
+              
+          - alert: "Malicious Process Detected"
+            expr: "rate(ml_detector_threats_total{threat_type=~\".*process.*|.*malware.*|.*suspicious.*\", confidence_level=\"high\"}[5m]) > 0"
+            for: "0s"  
+            labels:
+              severity: "critical"
+              category: "process_behavior"
+            annotations:
+              summary: "🔴 Malicious process detected"
+              description: "Process {{ "{{" }}$labels.source_ip{{ "}}" }} showing {{ "{{" }}$labels.threat_type{{ "}}" }} behavior"
+              
+          - alert: "Suspicious IP Activity"
+            expr: "ml_detector_suspicious_ip_activity > 0.8"
+            for: "2m"
+            labels:
+              severity: "warning"
+              category: "network"
+            annotations:
+              summary: "⚠️ Suspicious IP activity"
+              description: "IP {{ "{{" }}$labels.source_ip{{ "}}" }} showing high suspicious activity ({{ "{{" }}$value{{ "}}" }})"
+              
+          - alert: "High Confidence ML Threat"
+            expr: "ml_detector_anomaly_score > 0.85"
+            for: "1m"
+            labels:
+              severity: "critical"
+              category: "ml_detection"
+            annotations:
+              summary: "🧠 High confidence ML threat"
+              description: "ML models detected high-confidence threat (score: {{ "{{" }}$value{{ "}}" }})"
+              
+          - alert: "Port Scan Attack"
+            expr: "rate(ml_detector_port_scan_total{severity=\"high\"}[5m]) > 0"
+            for: "30s"
+            labels:
+              severity: "warning"
+              category: "network_attack"
+            annotations:
+              summary: "🔍 Port scanning attack"
+              description: "High severity port scan from {{ "{{" }}$labels.source_ip{{ "}}" }}"
+              
+          - alert: "DDoS Attack In Progress"
+            expr: "rate(ml_detector_ddos_total[2m]) > 0"
+            for: "0s"
+            labels:
+              severity: "critical" 
+              category: "network_attack"
+            annotations:
+              summary: "💥 DDoS attack detected"
+              description: "{{ "{{" }}$labels.attack_type{{ "}}" }} DDoS from {{ "{{" }}$labels.source_ip{{ "}}" }}"
+              
+          - alert: "Data Exfiltration Attempt"
+            expr: "rate(ml_detector_data_exfiltration_total[5m]) > 0"
+            for: "0s"
+            labels:
+              severity: "critical"
+              category: "data_security"
+            annotations:
+              summary: "📤 Data exfiltration detected"
+              description: "{{ "{{" }}$labels.direction{{ "}}" }} data exfiltration from {{ "{{" }}$labels.source_ip{{ "}}" }}"
+              
+      - name: "system-performance"
+        interval: "1m"
+        rules:
+          - alert: "ML Detection System Down"
+            expr: "up{job=\"ml-detector\"} == 0"
+            for: "2m"
+            labels:
+              severity: "critical"
+              category: "system"
+            annotations:
+              summary: "🚨 ML Detection system offline"
+              description: "ML Detector service is not responding"
+              
+          - alert: "High Processing Latency"
+            expr: "histogram_quantile(0.95, rate(ml_detector_processing_seconds_bucket[5m])) > 0.5"
+            for: "5m"
+            labels:
+              severity: "warning"
+              category: "performance"
+            annotations:
+              summary: "⚡ High detection latency"
+              description: "95th percentile processing time: {{ "{{" }}$value{{ "}}" }}s"
+              
+          - alert: "Model Training Failed"
+            expr: "increase(ml_detector_model_retrain_total[1h]) == 0 and ml_detector_advanced_model_status < 1"
+            for: "30m"
+            labels:
+              severity: "warning"
+              category: "ml_models"
+            annotations:
+              summary: "🧠 ML model training issues"
+              description: "{{ "{{" }}$labels.model_name{{ "}}" }} model not training properly"
+{{- end }}

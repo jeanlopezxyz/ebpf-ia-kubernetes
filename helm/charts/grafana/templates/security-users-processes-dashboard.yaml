@@ -1,0 +1,246 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-users-processes-dashboard
+  namespace: grafana
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/part-of: ebpf-ai
+    grafana_dashboard: "1"
+data:
+  security-users-processes.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "🛡️ Security: Users & Processes Monitoring", 
+        "tags": ["security", "users", "processes", "insider-threats"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "👤 Insider Threat Detection",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "topk(20, ml_detector_threats_total{threat_type=~\".*insider.*|.*off_hours.*|.*privilege.*\"})",
+                "format": "table",
+                "instant": true
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "displayMode": "table",
+                  "filterable": true
+                },
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "yellow", "value": 0.5},
+                    {"color": "red", "value": 0.8}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 10, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "🔍 Malicious Process Detection",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "topk(20, ml_detector_threats_total{threat_type=~\".*process.*|.*malware.*|.*suspicious.*|.*resource_abuse.*\"})",
+                "format": "table", 
+                "instant": true
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "displayMode": "table",
+                  "filterable": true
+                },
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "orange", "value": 0.5},
+                    {"color": "red", "value": 0.8}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 10, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "🌐 Suspicious IP Activity Heatmap",
+            "type": "table",
+            "targets": [
+              {
+                "expr": "topk(25, ml_detector_suspicious_ip_activity)",
+                "format": "table",
+                "instant": true
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "custom": {
+                  "displayMode": "gradient-gauge",
+                  "filterable": true
+                },
+                "min": 0,
+                "max": 1,
+                "color": {"mode": "continuous-GrYlRd"}
+              }
+            },
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 10}
+          },
+          {
+            "id": 4,
+            "title": "📈 User Behavior Trends", 
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ml_detector_threats_total{threat_type=~\".*session.*|.*command.*|.*sudo.*\"}[10m])",
+                "legendFormat": "{{ "{{" }}threat_type{{ "}}" }}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Threats/min",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 18}
+          },
+          {
+            "id": 5,
+            "title": "⚙️ Process Resource Abuse",
+            "type": "graph", 
+            "targets": [
+              {
+                "expr": "rate(ml_detector_threats_total{threat_type=~\".*cpu.*|.*memory.*|.*network_connection.*\"}[10m])",
+                "legendFormat": "{{ "{{" }}threat_type{{ "}}" }}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Abuse incidents/min",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 18}
+          },
+          {
+            "id": 6,
+            "title": "🎯 Port Scanning Activity by Source",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ml_detector_port_scan_total[5m])",
+                "legendFormat": "{{ "{{" }}severity{{ "}}" }} from {{ "{{" }}source_ip{{ "}}" }}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Scans/min",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 6, "w": 8, "x": 0, "y": 26}
+          },
+          {
+            "id": 7,
+            "title": "💥 DDoS Attack Sources",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ml_detector_ddos_total[5m])",
+                "legendFormat": "{{ "{{" }}attack_type{{ "}}" }} from {{ "{{" }}source_ip{{ "}}" }}"
+              }
+            ],
+            "gridPos": {"h": 6, "w": 8, "x": 8, "y": 26}
+          },
+          {
+            "id": 8,
+            "title": "📤 Data Exfiltration by Direction",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(ml_detector_data_exfiltration_total[5m])",
+                "legendFormat": "{{ "{{" }}direction{{ "}}" }} from {{ "{{" }}source_ip{{ "}}" }}"
+              }
+            ],
+            "gridPos": {"h": 6, "w": 8, "x": 16, "y": 26}
+          },
+          {
+            "id": 9,
+            "title": "🧠 AI Model Performance",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "ml_detector_dbscan_anomaly_score",
+                "legendFormat": "DBSCAN Anomaly Score"
+              },
+              {
+                "expr": "ml_detector_vae_reconstruction_error",
+                "legendFormat": "VAE Reconstruction Error"  
+              },
+              {
+                "expr": "ml_detector_anomaly_score",
+                "legendFormat": "General Anomaly Score"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Score (0-1)",
+                "min": 0,
+                "max": 1
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32}
+          }
+        ],
+        "time": {"from": "now-6h", "to": "now"},
+        "refresh": "30s",
+        "templating": {
+          "list": [
+            {
+              "name": "user_filter",
+              "type": "query",
+              "query": "label_values(ml_detector_threats_total{threat_type=~\".*user.*\"}, source_ip)",
+              "refresh": "time",
+              "includeAll": true,
+              "allValue": ".*",
+              "label": "Filter Users"
+            },
+            {
+              "name": "process_filter",
+              "type": "query", 
+              "query": "label_values(ml_detector_threats_total{threat_type=~\".*process.*\"}, source_ip)",
+              "refresh": "time",
+              "includeAll": true,
+              "allValue": ".*",
+              "label": "Filter Processes"
+            },
+            {
+              "name": "ip_filter",
+              "type": "query",
+              "query": "label_values(ml_detector_suspicious_ip_activity, source_ip)",
+              "refresh": "time", 
+              "includeAll": true,
+              "allValue": ".*",
+              "label": "Filter IPs"
+            }
+          ]
+        }
+      }
+    }
+{{- end }}

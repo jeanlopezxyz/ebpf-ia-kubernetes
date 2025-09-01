@@ -1,0 +1,221 @@
+# -----------------------------------------------------------------------------
+# Valores por defecto del chart ebpf-ai
+#
+# CPU por defecto (sin GPU):
+# - ml-detector está configurado para ejecutar sólo en CPU mediante la
+#   variable de entorno `CUDA_VISIBLE_DEVICES: ""` y con menos logs de TF.
+#
+# Cómo habilitar GPU (NVIDIA) para ml-detector cuando estés listo:
+# 1) En el clúster: instala el NVIDIA Device Plugin o el GPU Operator.
+# 2) Usa una imagen con CUDA/cuDNN y TF con GPU (p.ej. tensorflow/tensorflow:2.13.0-gpu)
+#    o una imagen propia basada en nvidia/cuda:*.
+# 3) En este values.yaml: descomenta `nvidia.com/gpu` en resources.limits.
+# 4) Quita o ajusta `CUDA_VISIBLE_DEVICES` (coméntala o pon "0").
+# 5) (Opcional) Si tienes nodos GPU dedicados, define nodeSelector/tolerations
+#    en las plantillas para fijar scheduling (requerirá soporte en templates).
+# -----------------------------------------------------------------------------
+
+global:
+  namespace: ebpf-security
+  
+# ML Detector Configuration
+mlDetector:
+  enabled: true
+  name: ml-detector
+  replicaCount: 1  # Images are now available
+  image:
+    repository: quay.io/jealopez/ml-detector
+    tag: "latest"
+    pullPolicy: Always
+    # Ejemplo de imagen con GPU (cuando habilites GPU):
+    # repository: tensorflow/tensorflow
+    # tag: "2.13.0-gpu"
+  
+  service:
+    type: ClusterIP
+    port: 5000
+    targetPort: 5000
+    
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+      # 'nvidia.com/gpu': 1  # ← Descomenta para solicitar 1 GPU NVIDIA
+    requests:
+      cpu: 500m
+      memory: 1Gi
+      
+  # Persistent storage for ML models
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: "local-path"  # Local path provisioner for single node
+      
+  env:
+    - name: MODEL_PATH
+      value: "/data/models"  # Standard data directory for ML models
+    - name: TRAINING_ENABLED
+      value: "true"  # Enable model re-training
+    - name: BASELINE_ENABLED
+      value: "true"
+    - name: PROMETHEUS_MULTIPROC_DIR
+      value: "/tmp/prometheus"
+    - name: PROMETHEUS_URL
+      value: "http://prometheus-server.prometheus.svc.cluster.local:80"
+    # Force CPU-only execution and reduce TF logs
+    - name: CUDA_VISIBLE_DEVICES
+      value: ""
+    - name: TF_CPP_MIN_LOG_LEVEL
+      value: "2"
+
+  # Programación opcional para nodos con GPU (requiere soporte en templates):
+  # nodeSelector:
+  #   nvidia.com/gpu.present: "true"
+  # tolerations:
+  #   - key: "nvidia.com/gpu"
+  #     operator: "Exists"
+  #     effect: "NoSchedule"
+      
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 5000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 5000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 30
+    failureThreshold: 3
+  serviceAccount:
+    create: true
+    name: ""
+
+# eBPF Monitor Configuration  
+ebpfMonitor:
+  enabled: true
+  name: ebpf-monitor
+  replicaCount: 1  # Images are now available
+  image:
+    repository: quay.io/jealopez/ebpf-monitor
+    tag: "latest"
+    pullPolicy: Always
+    
+  service:
+    type: ClusterIP
+    port: 8800
+    targetPort: 8800
+    
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+      
+  env:
+    - name: ML_DETECTOR_URL
+      value: "http://ml-detector:5000"
+    - name: INTERFACE
+      value: "eth0"
+    - name: STATS_WINDOW
+      value: "1s"
+    - name: POST_INTERVAL
+      value: "2s"
+    - name: HTTP_CLIENT_TIMEOUT
+      value: "2s"
+    - name: LOG_LEVEL
+      value: "info"
+      
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8800
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8800
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  serviceAccount:
+    create: true
+    name: ebpf-monitor
+
+
+# HPA Configuration
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Network Policies
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+
+# Redis Configuration (Dependency)
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: false
+  replica:
+    replicaCount: 1
+    persistence:
+      enabled: false
+
+            
+
+
+# ServiceMonitor CRDs (Prometheus Operator)
+serviceMonitor:
+  enabled: false
+
+# Metrics annotations on pods (for non-operator Prometheus)
+metrics:
+  addPrometheusAnnotations: true
+
+# Storage Configuration
+persistence:
+  enabled: true
+  storageClass: "local-path"
+  size: 5Gi
+  accessMode: ReadWriteOnce
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  hosts:
+    - host: ebpf-ai.apps.k8s.labjp.xyz
+      paths:
+        api: /api
+        metrics: /metrics
+        grafana: /grafana
+        prometheus: /prometheus
+        argocd: /argocd
+  tls: []
+  annotations: {}
+  rateLimit:
+    enabled: true
+    rps: 100
+    window: 1m
+
+# Security Context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000

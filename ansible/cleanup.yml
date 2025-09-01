@@ -1,0 +1,63 @@
+---
+- name: Cleanup eBPF + AI GitOps Environment
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  environment:
+    KUBECONFIG: "{{ ansible_env.HOME }}/.kube/config-kubeadm"
+    
+  tasks:
+    - name: Delete ArgoCD applications
+      kubernetes.core.k8s:
+        state: absent
+        api_version: argoproj.io/v1alpha1
+        kind: Application
+        name: "{{ item }}"
+        namespace: argocd
+      loop:
+        - app-of-apps
+        - ebpf-ai
+        - grafana
+        - prometheus
+        - registry
+        - tekton
+        - tekton-dashboard
+        - tekton-resources
+        - storage-config
+        - cilium-config
+        - kubernetes-dashboard
+      ignore_errors: yes
+      
+    - name: Delete namespaces
+      kubernetes.core.k8s:
+        state: absent
+        api_version: v1
+        kind: Namespace
+        name: "{{ item }}"
+      loop:
+        - ebpf-security
+        - argocd
+        - metallb-system
+        - registry
+        - prometheus
+        - grafana
+        - tekton
+        - kubernetes-dashboard
+        - local-path-storage
+      ignore_errors: yes
+      
+    - name: Delete kubeadm KVM cluster
+      shell: |
+        sudo virsh destroy ebpf-kvm-node || true
+        sudo virsh undefine ebpf-kvm-node --remove-all-storage || true
+        rm -f ~/.kube/config-kubeadm || true
+      ignore_errors: yes
+      
+    - name: Cleanup completed
+      debug:
+        msg:
+          - "🧹 Cleanup completed!"
+          - "✅ ArgoCD applications deleted"
+          - "✅ Namespaces deleted"  
+          - "✅ KVM cluster deleted"
+          - "💡 Run 'make bootstrap-kubeadm' to recreate environment"

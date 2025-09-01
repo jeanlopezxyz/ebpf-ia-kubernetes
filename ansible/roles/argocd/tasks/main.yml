@@ -1,0 +1,217 @@
+---
+- name: Create ArgoCD namespace
+  kubernetes.core.k8s:
+    name: "{{ argocd.namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    
+- name: Add ArgoCD Helm repository
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: https://argoproj.github.io/argo-helm
+    
+- name: Install ArgoCD via custom Helm chart
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: "{{ playbook_dir }}/../helm/charts/argocd"
+    release_namespace: "{{ argocd.namespace }}"
+    dependency_update: true
+    values:
+      # Override values from Ansible variables if needed
+      argo-cd:
+        configs:
+          cm:
+            url: "http://argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
+      ingress:
+        hosts:
+          - host: "argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
+            paths:
+              - path: /
+                pathType: Prefix
+                service:
+                  name: argocd-server
+                  port: 80
+    wait: true
+    timeout: 600s
+    
+- name: Wait for ArgoCD pods to be running
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ argocd.namespace }}"
+    label_selectors:
+      - app.kubernetes.io/part-of=argocd
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 300
+    
+- name: Get ArgoCD server service information
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Service
+    name: argocd-server
+    namespace: "{{ argocd.namespace }}"
+  register: argocd_service
+  
+# Git Repository Access Configuration
+#
+# DEVELOPMENT/PUBLIC REPOS: Uses HTTPS (current configuration)
+#   - No SSH keys required
+#   - Suitable for public repositories
+#   - Simpler setup and more secure for public projects
+#
+# PRODUCTION/PRIVATE REPOS: Use SSH (manual configuration required)
+#   - For private repositories that require SSH access
+#   - Configure manually after bootstrap:
+#     kubectl create secret generic git-ssh-key \
+#       --from-file=ssh-privatekey=~/.ssh/id_ed25519 \
+#       --from-file=ssh-publickey=~/.ssh/id_ed25519.pub \
+#       -n argocd
+#   - Then add label: kubectl label secret git-ssh-key argocd.argoproj.io/secret-type=repository -n argocd
+#   - Update applications to use: repoURL: "git@github.com:user/repo.git"
+  
+# ArgoCD Ingress is now managed by the ArgoCD Helm chart
+
+# Kubernetes Dashboard will be managed by ArgoCD as an application
+  
+- name: Display ArgoCD access information
+  debug:
+    msg:
+      - "🚀 ArgoCD GitOps installed successfully!"
+      - "🌐 Access URL: Use port-forward (LoadBalancer pending in Minikube)"
+      - "👤 Username: admin"
+      - "🔐 Password: admin123"
+      - "💡 Port forward: kubectl port-forward svc/argocd-server -n argocd 8080:80"
+- name: Add required Helm repositories for dependencies
+  kubernetes.core.helm_repository:
+    name: "{{ item.name }}"
+    repo_url: "{{ item.url }}"
+  loop:
+    - name: bitnami
+      url: https://charts.bitnami.com/bitnami
+    - name: grafana  
+      url: https://grafana.github.io/helm-charts
+    - name: prometheus-community
+      url: https://prometheus-community.github.io/helm-charts
+
+- name: Build Helm chart dependencies for eBPF AI
+  command: helm dependency build
+  args:
+    chdir: "{{ playbook_dir }}/../helm/charts/ebpf-ai"
+  register: helm_deps
+  changed_when: helm_deps.rc == 0
+
+- name: Wait for ArgoCD to be fully ready
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ argocd.namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=argocd-server
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 300
+    
+# Password configuration is now handled by the ArgoCD Helm chart
+    
+- name: Apply App-of-Apps pattern
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: argoproj.io/v1alpha1
+      kind: Application
+      metadata:
+        name: app-of-apps
+        namespace: "{{ argocd.namespace }}"
+        labels:
+          app.kubernetes.io/name: app-of-apps
+          app.kubernetes.io/part-of: ebpf-ai-system
+      spec:
+        project: default
+        source:
+          repoURL: "{{ applications.ebpf_ai.git_repo }}"
+          targetRevision: "{{ applications.ebpf_ai.git_branch }}"
+          path: gitops/applications
+        destination:
+          server: https://kubernetes.default.svc
+          namespace: "{{ argocd.namespace }}"
+        syncPolicy:
+          automated:
+            prune: true
+            selfHeal: true
+            allowEmpty: false
+          syncOptions:
+            - CreateNamespace=true
+            - PrunePropagationPolicy=foreground
+            - PruneLast=true
+          retry:
+            limit: 5
+            backoff:
+              duration: 5s
+              factor: 2
+              maxDuration: 3m
+              
+# All individual applications are defined in gitops/applications/
+# They will be automatically created by the App-of-Apps pattern
+
+- name: Wait for App-of-Apps to be created
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    name: app-of-apps
+    namespace: "{{ argocd.namespace }}"
+    wait: true
+    wait_timeout: 60
+  register: app_of_apps
+
+- name: Pause to let ArgoCD process the App-of-Apps
+  pause:
+    seconds: 15
+
+- name: Get list of all applications created by App-of-Apps
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    namespace: "{{ argocd.namespace }}"
+  register: all_apps
+
+- name: Trigger sync for all applications
+  shell: |
+    # Force sync all applications to ensure they start deploying
+    for app in $(kubectl get applications -n {{ argocd.namespace }} -o name); do
+      echo "Syncing $app"
+      kubectl patch $app -n {{ argocd.namespace }} --type='json' \
+        -p='[{"op": "replace", "path": "/spec/syncPolicy/automated", "value": {"prune": true, "selfHeal": true}}]' || true
+    done
+  when: all_apps.resources | length > 0
+
+- name: Display applications being deployed
+  debug:
+    msg:
+      - "Applications found: {{ all_apps.resources | map(attribute='metadata.name') | list }}"
+      - "Total: {{ all_apps.resources | length }} applications"
+  when: all_apps.resources | length > 0
+  
+- name: Get final status of all applications
+  kubernetes.core.k8s_info:
+    api_version: argoproj.io/v1alpha1
+    kind: Application
+    namespace: "{{ argocd.namespace }}"
+  register: final_apps
+
+- name: Display GitOps setup status
+  debug:
+    msg:
+      - "🚀 ArgoCD Applications configured and synced successfully!"
+      - "📋 App-of-Apps: app-of-apps"
+      - "🤖 Main Application: ebpf-ai"
+      - "🔄 Sync Policy: Automated (prune + self-heal enabled)"
+      - "📦 Git Repository: {{ applications.ebpf_ai.git_repo }}"
+      - "🌿 Branch: {{ applications.ebpf_ai.git_branch }}"
+      - "📊 Total Applications: {{ final_apps.resources | length }}"
+      - "✅ Bootstrap complete! Applications will continue syncing in background"

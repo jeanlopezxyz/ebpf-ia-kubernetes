@@ -1,0 +1,106 @@
+# Grafana Configuration for eBPF-AI Platform
+
+grafana:
+  enabled: true
+  
+  # Basic configuration  
+  adminPassword: "admin123"  # Plain text password
+  
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3000
+    
+  # Persistence for dashboards and data
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClassName: "local-path"
+    
+  # Enhanced plugins for eBPF-AI visualizations (compatible with Grafana v10+)
+  plugins:
+    - grafana-piechart-panel
+    - grafana-worldmap-panel
+    - grafana-polystat-panel
+    
+  # Datasource configuration
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://localhost:9090
+          access: proxy
+          isDefault: true
+          jsonData:
+            timeInterval: "15s"
+            
+  # Dashboard providers
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'ebpf-ai-dashboards'
+        orgId: 1
+        folder: 'eBPF-AI'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards/ebpf-ai
+          
+  # Dashboards configuration - use sidecar ONLY
+  dashboards: {}
+        
+  # Sidecar enabled for ConfigMap detection
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+      folder: /tmp/dashboards
+      
+  # Grafana configuration
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
+      serve_from_sub_path: false
+    security:
+      admin_user: admin
+      admin_password: admin123
+    users:
+      auto_assign_org_role: Admin
+    auth:
+      disable_login_form: false
+      disable_signout_menu: false
+    security:
+      login_maximum_inactive_lifetime_duration: 7d
+      login_maximum_lifetime_duration: 30d
+      login_cookie_name: grafana_sess
+      login_remember_days: 7
+    alerting:
+      enabled: true
+      execute_alerts: true
+    smtp:
+      enabled: false  # Configure if email alerts needed
+    notifications:
+      timeout: 30s
+    panels:
+      disable_sanitize_html: false
+    security:
+      disable_gravatar: true
+      cookie_secure: false
+      strict_transport_security: false
+      
+  # Resource limits
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi

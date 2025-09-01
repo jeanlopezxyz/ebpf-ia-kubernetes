@@ -1,0 +1,47 @@
+---
+- name: Bootstrap eBPF + AI GitOps Environment
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars:
+    kubernetes_namespace: "ebpf-security"
+    argocd_namespace: "argocd"
+  environment:
+    KUBECONFIG: "{{ ansible_env.HOME }}/.kube/config{% if cluster_method == 'kubeadm' %}-kubeadm{% endif %}"
+    
+  tasks:
+    - name: Check prerequisites
+      include_role:
+        name: prerequisites
+      
+    - name: Setup Kubernetes cluster
+      include_role:
+        name: "{{ cluster_method }}"
+        
+    - name: Install Cilium CNI with eBPF
+      include_role:
+        name: cilium
+        
+    - name: Wait for Cilium to fully stabilize kube-proxy replacement
+      wait_for:
+        timeout: 60
+        
+    - name: Install MetalLB LoadBalancer
+      include_role:
+        name: metallb
+        
+    - name: Install NGINX Ingress Controller
+      include_role:
+        name: nginx-ingress
+        
+    - name: Setup Storage Classes
+      include_role:
+        name: storage
+        
+    - name: Install ArgoCD GitOps
+      include_role:
+        name: argocd
+        
+    - name: Display access information
+      include_role:
+        name: access-info

@@ -1,0 +1,87 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: application-build-ci
+  namespace: ebpf-security
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app.kubernetes.io/name: tekton-ci
+    app.kubernetes.io/instance: tekton-ci
+    app.kubernetes.io/component: pipeline-application-build
+    app.kubernetes.io/part-of: ebpf-ai-system
+spec:
+  description: Generic CI pipeline for building any application with Docker/Buildah
+  params:
+    - name: git-url
+      description: Git repository URL
+      default: https://github.com/jeanlopezxyz/ebpf-ia-gitops.git
+    - name: git-revision
+      description: Git revision to build
+      default: main
+    - name: image-registry
+      description: Container registry URL  
+      default: quay.io
+    - name: image-name
+      description: Image name (e.g., ebpf-monitor, ml-detector)
+      type: string
+    - name: dockerfile-path
+      description: Path to Dockerfile relative to repository root
+      type: string
+    - name: context-path
+      description: Build context path relative to repository root
+      type: string
+    - name: argo-app-name
+      description: Argo CD application name to sync after build
+      default: ebpf-ai
+  workspaces:
+    - name: shared-data
+      description: Shared workspace for source code and artifacts
+    - name: dockerconfig
+      description: Docker credentials for registry push
+      optional: true
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone-secure
+      workspaces:
+        - name: output
+          workspace: shared-data
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+
+    - name: build-image
+      taskRef:
+        name: buildah
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: source
+          workspace: shared-data
+        - name: dockerconfig
+          workspace: dockerconfig
+      params:
+        - name: IMAGE
+          value: $(params.image-registry)/$(params.image-name):latest
+        - name: DOCKERFILE
+          value: $(params.dockerfile-path)
+        - name: CONTEXT
+          value: $(params.context-path)
+        - name: FORMAT
+          value: docker
+        - name: TLSVERIFY
+          value: "false"
+        - name: BUILD_EXTRA_ARGS
+          value: "--label=git.commit=$(params.git-revision) --label=build.date=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --label=image.name=$(params.image-name)"
+
+    - name: sync-deployment
+      taskRef:
+        name: argocd-sync
+      runAfter:
+        - build-image
+      params:
+        - name: app-name
+          value: $(params.argo-app-name)

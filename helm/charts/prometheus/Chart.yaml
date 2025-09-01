@@ -1,0 +1,27 @@
+apiVersion: v2
+name: prometheus
+description: Prometheus monitoring for eBPF-AI platform with custom scrape configs
+type: application
+version: 1.0.0
+appVersion: "v2.54.1"
+icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/prometheus/icon/color/prometheus-icon-color.png
+kubeVersion: ">=1.26.0-0"
+keywords:
+  - prometheus
+  - monitoring
+  - metrics
+  - observability
+  - ebpf
+home: https://github.com/jeanlopezxyz/ebpf-ia-gitops
+sources:
+  - https://github.com/prometheus-community/helm-charts
+maintainers:
+  - name: eBPF AI Team
+    email: team@ebpf-ai.local
+dependencies:
+  - name: prometheus
+    version: "25.6.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+annotations:
+  artifacthub.io/category: monitoring
+  artifacthub.io/keywords: prometheus,metrics,ebpf,ai

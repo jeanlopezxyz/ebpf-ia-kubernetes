@@ -1,0 +1,54 @@
+# Registry chart default values
+
+nameOverride: "registry"
+fullnameOverride: "registry"
+
+replicaCount: 1
+
+image:
+  repository: registry
+  tag: "2"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 5000
+  nodePort: 30050
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  storageClass: "local-path"
+  size: 15Gi  # Generous storage for multiple container images and layers
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+podLabels: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+probes:
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+# TLS Configuration
+tls:
+  enabled: false
+  # Registry hostname for certificate Subject Alternative Name
+  hostname: "registry.registry.svc.cluster.local"
+  # Registry external IP address
+  registryHostname: "labjp.local"

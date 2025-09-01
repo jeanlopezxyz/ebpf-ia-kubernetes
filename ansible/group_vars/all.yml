@@ -1,0 +1,105 @@
+---
+# Global configuration for eBPF + AI GitOps deployment
+
+# Environment configuration
+#
+# LAB MODE (default):
+#   - Uses NodePort for services (accessible via Minikube IP + port)
+#   - Uses podman driver (simpler setup)
+#   - Virtual MetalLB IPs (192.168.49.x range)
+#   - Access: http://192.168.58.2:32250/argocd
+#
+# PROD MODE:
+#   - Uses LoadBalancer with MetalLB (direct IP access)
+#   - Uses qemu driver with bridge networking
+#   - Real network IPs (10.0.20.x range)
+#   - Access: http://10.0.20.200 (direct)
+#   - Requires: Network bridge interface configuration
+#
+deployment_mode:
+  type: "prod" # Using prod mode for MetalLB with bridge networking
+
+# Cluster deployment method
+cluster_method: "kubeadm" # Using kubeadm with KVM for production-like setup
+
+# Kubeadm single-node configuration
+kubeadm:
+  node_name: "labjp"
+  hostname: "api.k8s.labjp.xyz" # DNS hostname for API server
+  base_domain: "apps.k8s.labjp.xyz" # Base domain for applications
+  kubernetes_version: "v1.33.1" # Latest stable Kubernetes version (August 2025)
+  pod_network_cidr: "10.244.0.0/16" # Pod network (65K IPs)
+  service_cidr: "10.96.0.0/12" # Service network (1M IPs)
+  vm:
+    memory: "12288" # 12GB RAM
+    cpus: 4
+    disk_size: "60g"
+    network_bridge: "br0" # Bridge network
+    static_ip: "10.0.10.100" # Fixed IP for VM/API
+    gateway: "10.0.10.1" # Bridge gateway
+    dns_servers:
+      - "10.0.10.1" # pfSense as primary DNS
+      - "8.8.8.8" # Backup DNS
+
+# Network configuration
+network:
+  # Production: Use local network range for direct access
+  # Lab: Use KVM virtual range (accessed via NodePort)
+  metallb_ip_range: "10.0.10.101-10.0.10.120" # Single IP for NGINX Ingress
+  nginx_ingress_ip: "10.0.10.101" # Fixed IP for Ingress Controller
+  bridge_interface: "br0" # Your configured bridge interface
+  # Inside the Kubernetes node/VM, the NIC name that faces the 10.0.10.0/24 network
+  # Example values: enp1s0, ens3, eth0 (use `ip -br -4 addr` on the node to confirm)
+  node_interface: "enp1s0"
+
+# MetalLB tuning (optional). By default, advertise on all node interfaces.
+# To force a specific interface or node selector, uncomment below.
+metallb:
+  interfaces: []  # e.g., ["enp1s0"]
+  nodeSelectors: []  # e.g., [{ matchLabels: { kubernetes.io/hostname: "{{ kubeadm.node_name }}" } }]
+
+# Cilium configuration
+cilium:
+  version: "1.18.1" # Latest stable version (August 2025)
+  enable_hubble: true
+  enable_gateway_api: true
+  enable_l2_announcements: false # Disabled for stability
+  enable_netkit: false # Disabled for stability
+
+# ArgoCD namespace (full config in helm/charts/argocd/)
+argocd:
+  namespace: "argocd"
+
+# Application configuration
+applications:
+  ebpf_ai:
+    namespace: "ebpf-security"
+    git_repo: "https://github.com/jeanlopezxyz/ebpf-ia-gitops.git"
+    git_path: "helm/charts/ebpf-ai"
+    git_branch: "main"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  nginx:
+    enable_metrics: true
+    ssl_redirect: false
+    # Service type based on environment
+    service_type: "{{ 'LoadBalancer' if deployment_mode.type == 'prod' else 'NodePort' }}"
+  hosts:
+    main: "ebpf-ai.apps.k8s.labjp.xyz"
+    registry: "registry.apps.k8s.labjp.xyz"
+    grafana: "grafana.apps.k8s.labjp.xyz"
+    prometheus: "prometheus.apps.k8s.labjp.xyz"
+    argocd: "argocd.apps.k8s.labjp.xyz"
+    dashboard: "dashboard.apps.k8s.labjp.xyz"
+
+# Resource limits
+resources:
+  ml_detector:
+    replicas: 2
+    cpu_limit: "1000m"
+    memory_limit: "2Gi"
+  ebpf_monitor:
+    cpu_limit: "500m"
+    memory_limit: "1Gi"
