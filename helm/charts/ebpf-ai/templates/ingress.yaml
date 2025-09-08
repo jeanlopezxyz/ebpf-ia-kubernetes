@@ -52,29 +52,8 @@ spec:
               name: {{ $.Values.ebpfMonitor.name }}
               port:
                 number: {{ $.Values.ebpfMonitor.service.port }}
-        # Grafana Dashboard
-        - path: {{ .paths.grafana | default "/grafana" }}
-          pathType: Prefix
-          backend:
-            service:
-              name: ebpf-ai-grafana
-              port:
-                number: 80
-        # Prometheus UI
-        - path: {{ .paths.prometheus | default "/prometheus" }}
-          pathType: Prefix
-          backend:
-            service:
-              name: ebpf-ai-prometheus-server
-              port:
-                number: 9090
-        # ArgoCD UI
-        - path: {{ .paths.argocd | default "/argocd" }}
-          pathType: Prefix
-          backend:
-            service:
-              name: argocd-server
-              port:
-                number: 80
+        # Note: Cross-namespace service references removed
+        # Grafana, Prometheus, and ArgoCD have their own dedicated ingress resources
+        # in their respective namespaces
     {{- end }}
 {{- end }}
