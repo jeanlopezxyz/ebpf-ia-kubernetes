@@ -1,0 +1,60 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: ebpf-ai-platform
+  description: eBPF + AI GitOps Platform for threat detection and network monitoring
+spec:
+  owner: platform-team
+  domain: security
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ml-detector
+  description: AI-based threat detection service using machine learning
+  annotations:
+    backstage.io/kubernetes-id: ml-detector
+    backstage.io/kubernetes-namespace: ebpf-security
+spec:
+  type: service
+  lifecycle: production
+  owner: ai-team
+  system: ebpf-ai-platform
+  providesApis:
+    - ml-detection-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ebpf-monitor
+  description: eBPF-based network monitoring and metrics collection
+  annotations:
+    backstage.io/kubernetes-id: ebpf-monitor
+    backstage.io/kubernetes-namespace: ebpf-security
+spec:
+  type: service
+  lifecycle: production
+  owner: ebpf-team
+  system: ebpf-ai-platform
+  providesApis:
+    - ebpf-metrics-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: ml-detection-api
+  description: Machine Learning threat detection API
+spec:
+  type: openapi
+  lifecycle: production
+  owner: ai-team
+  system: ebpf-ai-platform
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: ML Detection API
+      version: 1.0.0
+    paths:
+      /detect:
+        post:
+          summary: Detect threats using ML models

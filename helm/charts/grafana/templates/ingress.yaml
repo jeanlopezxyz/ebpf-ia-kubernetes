@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: grafana.apps.k8s.labjp.xyz
+  - host: grafana.{{ .Values.domainBase | default "apps.k8s.labjp.xyz" }}
     http:
       paths:
       - path: /

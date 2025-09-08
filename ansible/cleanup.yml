@@ -37,7 +37,6 @@
       loop:
         - ebpf-security
         - argocd
-        - metallb-system
         - registry
         - prometheus
         - grafana

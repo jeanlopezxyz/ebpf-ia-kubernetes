@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: registry.apps.k8s.labjp.xyz
+  - host: registry.{{ .Values.domainBase | default "apps.k8s.labjp.xyz" }}
     http:
       paths:
       - path: /

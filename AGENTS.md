@@ -4,7 +4,7 @@
 - `ansible/`: Cluster bootstrap/cleanup and roles (minikube, cilium, metallb, argocd, ingress, storage). Inventory in `ansible/inventory/`; globals in `ansible/group_vars/all.yml`.
 - `helm/charts/ebpf-ai/`: Main app chart (Deployments/Services/HPA/Ingress). Grafana dashboards under `grafana/*.json` loaded by sidecar.
 - `gitops/`: Argo CD App-of-Apps in `app-of-apps.yaml`; app specs in `gitops/applications/`.
-- `applications/`: App sources + Dockerfiles — `ml-detector` (Python), `ebpf-monitor` (Go).
+- `applications/`: App sources + Dockerfiles — `ml-detector` (Python) and `ebpf-monitor` (Go).
 - `helm/charts/tekton-ci/`: Tekton Tasks/Pipelines packaged as Helm.
 - `docs/`, `dashboards/`: Ops docs and Grafana dashboards.
 
@@ -14,15 +14,15 @@
 - `make bootstrap`: Create local cluster and install Argo CD + stack.
 - `make status` / `make logs`: Inspect app status; tail key logs.
 - `make port-forward`: Local access to Argo CD, Grafana, Prometheus, services.
-- `make sync` / `make deploy`: Sync Argo CD apps; force with `--force`.
+- `make sync` / `make deploy`: Sync Argo CD apps; force via `--force` when needed.
 - `make test`: Health check for `ml-detector` via port-forward + curl.
-- `make clean` or `make restart`: Tear down or rebuild.
+- `make clean` / `make restart`: Tear down or rebuild the stack.
 
 ## Coding Style & Naming Conventions
-- **YAML/Helm**: 2-space indent; lower-kebab-case names; standard labels `app.kubernetes.io/*`. Run `helm lint helm/charts/ebpf-ai`.
-- **Kubernetes**: Default namespace `ebpf-security`; avoid hardcoded IPs; template via values.
-- **Python (`applications/ml-detector`)**: Black formatting, type hints; keep Flask endpoints small.
-- **Go (`applications/ebpf-monitor`)**: Use `gofmt`, `go vet`; module path rooted at `applications/ebpf-monitor`.
+- YAML/Helm: 2-space indent; lower-kebab-case names; labels `app.kubernetes.io/*`. Run `helm lint helm/charts/ebpf-ai`.
+- Kubernetes: Default namespace `ebpf-security`; avoid hardcoded IPs; template via values.
+- Python (`applications/ml-detector`): Black formatting, type hints; keep Flask endpoints small.
+- Go (`applications/ebpf-monitor`): Use `gofmt`, `go vet`; module path rooted at `applications/ebpf-monitor`.
 
 ## Testing Guidelines
 - Fast checks: `make test`, `make status`, `kubectl get pods -n ebpf-security`.
@@ -31,9 +31,8 @@
 - Tekton: Deployed via `helm/charts/tekton-ci`; managed by Argo CD app `tekton-ci-pipelines`.
 
 ## Commit & Pull Request Guidelines
-- **Commits**: Imperative, concise subject (≤72 chars). Optional scope: `tekton:`, `helm:`, `ansible:`, `gitops:`, `apps:`.
-  - Example: `helm: add HPA for ml-detector`.
-- **PRs**: Explain motivation and changes, link issues, include outputs (e.g., `make status`) and dashboard screenshots. Ensure `helm lint` passes and `make test` is green.
+- Commits: Imperative, concise subject (≤72 chars). Optional scope `tekton:`, `helm:`, `ansible:`, `gitops:`, `apps:`. Example: `helm: add HPA for ml-detector`.
+- PRs: Explain motivation and changes, link issues, include outputs (e.g., `make status`) and dashboard screenshots. Ensure `helm lint` passes and `make test` is green.
 
 ## Security & Configuration Tips
 - Do not commit secrets; use Kubernetes Secrets and values overrides.

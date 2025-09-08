@@ -3,6 +3,9 @@
 nameOverride: "registry"
 fullnameOverride: "registry"
 
+# Base domain for ingress hosts (e.g., apps.k8s.labjp.xyz)
+domainBase: "apps.k8s.labjp.xyz"
+
 replicaCount: 1
 
 image:

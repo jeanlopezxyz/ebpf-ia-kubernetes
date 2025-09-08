@@ -4,20 +4,20 @@
 # Environment configuration
 #
 # LAB MODE (default):
-#   - Uses NodePort for services (accessible via Minikube IP + port)
+#   - Uses NodePort for services (accessible via node IP + port)
 #   - Uses podman driver (simpler setup)
-#   - Virtual MetalLB IPs (192.168.49.x range)
-#   - Access: http://192.168.58.2:32250/argocd
+#   - Access: http://node-ip:nodeport
 #
 # PROD MODE:
-#   - Uses LoadBalancer with MetalLB (direct IP access)
+#   - Uses NodePort with external load balancer (pfSense)
 #   - Uses qemu driver with bridge networking
-#   - Real network IPs (10.0.20.x range)
-#   - Access: http://10.0.20.200 (direct)
-#   - Requires: Network bridge interface configuration
+#   - Real network IPs (10.0.10.x range)
+#   - Access: http://external-lb-ip (direct)
+#   - Requires: External load balancer configuration
 #
 deployment_mode:
-  type: "prod" # Using prod mode for MetalLB with bridge networking
+  type: "prod" # Using prod mode with external load balancer (pfSense)
+  external_lb: true # Use external load balancer (pfSense HAProxy)
 
 # Cluster deployment method
 cluster_method: "kubeadm" # Using kubeadm with KVM for production-like setup
@@ -43,20 +43,13 @@ kubeadm:
 
 # Network configuration
 network:
-  # Production: Use local network range for direct access
-  # Lab: Use KVM virtual range (accessed via NodePort)
-  metallb_ip_range: "10.0.10.101-10.0.10.120" # Single IP for NGINX Ingress
-  nginx_ingress_ip: "10.0.10.101" # Fixed IP for Ingress Controller
+  # Production: External load balancer handles IP assignment
+  # Lab: Use NodePort for external access
   bridge_interface: "br0" # Your configured bridge interface
   # Inside the Kubernetes node/VM, the NIC name that faces the 10.0.10.0/24 network
   # Example values: enp1s0, ens3, eth0 (use `ip -br -4 addr` on the node to confirm)
   node_interface: "enp1s0"
 
-# MetalLB tuning (optional). By default, advertise on all node interfaces.
-# To force a specific interface or node selector, uncomment below.
-metallb:
-  interfaces: []  # e.g., ["enp1s0"]
-  nodeSelectors: []  # e.g., [{ matchLabels: { kubernetes.io/hostname: "{{ kubeadm.node_name }}" } }]
 
 # Cilium configuration
 cilium:
@@ -84,8 +77,8 @@ ingress:
   nginx:
     enable_metrics: true
     ssl_redirect: false
-    # Service type based on environment
-    service_type: "{{ 'LoadBalancer' if deployment_mode.type == 'prod' else 'NodePort' }}"
+    # Service type - NodePort for external load balancer compatibility
+    service_type: "{{ 'NodePort' if deployment_mode.external_lb | default(false) else ('LoadBalancer' if deployment_mode.type == 'prod' else 'NodePort') }}"
   hosts:
     main: "ebpf-ai.apps.k8s.labjp.xyz"
     registry: "registry.apps.k8s.labjp.xyz"

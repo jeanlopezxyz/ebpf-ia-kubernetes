@@ -168,4 +168,11 @@ For pipeline failures:
 - **ArgoCD OutOfSync**: Often due to Helm template validation errors - check logs
 - **Registry connectivity**: Use internal IP `192.168.67.2:5000` for in-cluster access
 
+### MetalLB Configuration (Bridge Networking)
+For KVM/QEMU bridge networking environments, MetalLB requires specific configuration:
+- **L2 Native Mode**: FRR/BGP disabled (`speaker.frr.enabled: false`)
+- **Host Networking**: Speaker uses `hostNetwork: true` for direct interface access
+- **Interface Specific**: L2Advertisement targets `enp1s0` interface explicitly
+- **Node Selector**: Restricts announcement to specific node in single-node setups
+
 The system prioritizes GitOps principles with everything managed declaratively through Git, automated CI/CD via Tekton, and comprehensive observability through Prometheus/Grafana stack.

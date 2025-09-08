@@ -26,9 +26,6 @@
       wait_for:
         timeout: 60
         
-    - name: Install MetalLB LoadBalancer
-      include_role:
-        name: metallb
         
     - name: Install NGINX Ingress Controller
       include_role:

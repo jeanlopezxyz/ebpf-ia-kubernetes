@@ -1,5 +1,8 @@
 # Grafana Configuration for eBPF-AI Platform
 
+# Base domain for ingress hosts (e.g., apps.k8s.labjp.xyz)
+domainBase: "apps.k8s.labjp.xyz"
+
 grafana:
   enabled: true
   

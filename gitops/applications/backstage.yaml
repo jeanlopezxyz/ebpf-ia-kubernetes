@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubernetes-dashboard
+  name: backstage
   namespace: argocd
   labels:
-    app.kubernetes.io/name: kubernetes-dashboard
+    app.kubernetes.io/name: backstage
     app.kubernetes.io/part-of: ebpf-ai-system
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -13,10 +13,10 @@ spec:
   source:
     repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
     targetRevision: main
-    path: helm/charts/kubernetes-dashboard
+    path: helm/charts/backstage
   destination:
     server: https://kubernetes.default.svc
-    namespace: kubernetes-dashboard
+    namespace: backstage
   syncPolicy:
     automated:
       prune: true

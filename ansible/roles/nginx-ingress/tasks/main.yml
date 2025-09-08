@@ -4,14 +4,25 @@
     name: ingress-nginx
     repo_url: https://kubernetes.github.io/ingress-nginx
 
-- name: Install NGINX Ingress Controller via Helm
-  kubernetes.core.helm:
-    name: ingress-nginx
-    chart_ref: ingress-nginx/ingress-nginx
-    chart_version: "4.11.3"
-    release_namespace: ingress-nginx
-    create_namespace: true
-    values:
+- name: Set NGINX Ingress values for external LB
+  ansible.builtin.set_fact:
+    nginx_values:
+      controller:
+        service:
+          type: NodePort
+          externalTrafficPolicy: Local
+        ingressClassResource:
+          default: true
+        metrics:
+          enabled: true
+        podAnnotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "10254"
+  when: deployment_mode.external_lb | default(false)
+
+- name: Set NGINX Ingress values for LoadBalancer
+  ansible.builtin.set_fact:
+    nginx_values:
       controller:
         service:
           type: LoadBalancer
@@ -24,6 +35,16 @@
         podAnnotations:
           prometheus.io/scrape: "true"
           prometheus.io/port: "10254"
+  when: not (deployment_mode.external_lb | default(false))
+
+- name: Install NGINX Ingress Controller via Helm
+  kubernetes.core.helm:
+    name: ingress-nginx
+    chart_ref: ingress-nginx/ingress-nginx
+    chart_version: "4.11.3"
+    release_namespace: ingress-nginx
+    create_namespace: true
+    values: "{{ nginx_values }}"
     wait: true
     timeout: 300s
 
@@ -39,10 +60,21 @@
       status: "True"
     wait_timeout: 300
     
-- name: Display NGINX Ingress status
-  debug:
+- name: Display NGINX Ingress status (External LB)
+  ansible.builtin.debug:
+    msg:
+      - "✅ NGINX Ingress Controller installed successfully!"
+      - "🔗 Service Type: NodePort (External LB mode)"
+      - "🌐 External access via pfSense load balancer"
+      - "📦 Namespace: ingress-nginx"
+      - "🔧 Metrics: Enabled on port 10254"
+  when: deployment_mode.external_lb | default(false)
+
+- name: Display NGINX Ingress status (LoadBalancer)
+  ansible.builtin.debug:
     msg:
       - "✅ NGINX Ingress Controller installed successfully!"
       - "🌐 LoadBalancer IP: {{ network.nginx_ingress_ip }}"
       - "📦 Namespace: ingress-nginx"
       - "🔧 Metrics: Enabled on port 10254"
+  when: not (deployment_mode.external_lb | default(false))

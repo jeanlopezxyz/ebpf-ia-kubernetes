@@ -1,0 +1,73 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: ebpf-ai-platform
+  title: eBPF + AI GitOps Platform
+  description: Complete platform for eBPF-based network monitoring with AI threat detection
+spec:
+  owner: platform-team
+  domain: security
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ml-detector
+  title: ML Threat Detector
+  description: AI-powered threat detection service using machine learning models
+  annotations:
+    backstage.io/kubernetes-id: ml-detector
+    backstage.io/kubernetes-namespace: ebpf-security
+    backstage.io/source-location: url:https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/tree/main/applications/ml-detector
+spec:
+  type: service
+  lifecycle: production
+  owner: ai-team
+  system: ebpf-ai-platform
+  providesApis:
+    - ml-detection-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ebpf-monitor
+  title: eBPF Network Monitor
+  description: eBPF-based network monitoring and metrics collection service
+  annotations:
+    backstage.io/kubernetes-id: ebpf-monitor
+    backstage.io/kubernetes-namespace: ebpf-security
+    backstage.io/source-location: url:https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/tree/main/applications/ebpf-monitor
+spec:
+  type: service
+  lifecycle: production
+  owner: ebpf-team
+  system: ebpf-ai-platform
+  providesApis:
+    - ebpf-metrics-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: ml-detection-api
+  title: ML Detection API
+  description: REST API for AI-based threat detection
+spec:
+  type: openapi
+  lifecycle: production
+  owner: ai-team
+  system: ebpf-ai-platform
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: ML Detection API
+      version: 1.0.0
+      description: Machine Learning threat detection API
+    paths:
+      /health:
+        get:
+          summary: Health check endpoint
+      /detect:
+        post:
+          summary: Detect threats using ML models
+      /metrics:
+        get:
+          summary: Prometheus metrics endpoint
