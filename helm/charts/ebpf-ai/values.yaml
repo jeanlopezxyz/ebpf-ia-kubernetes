@@ -197,7 +197,7 @@ persistence:
 
 # Ingress Configuration
 ingress:
-  enabled: true
+  enabled: false  # Temporarily disabled to fix NGINX conflicts
   hosts:
     - host: ebpf-ai.apps.k8s.labjp.xyz
       paths:
