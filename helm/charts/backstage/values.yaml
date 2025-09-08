@@ -19,7 +19,11 @@ backstage:
 
       auth:
         providers:
-          guest: {}
+          guest:
+            dangerouslyAllowOutsideDevelopment: true
+
+      permission:
+        enabled: false
 
       techdocs:
         builder: local
