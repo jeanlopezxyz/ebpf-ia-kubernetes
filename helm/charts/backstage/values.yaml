@@ -1,0 +1,57 @@
+backstage:
+  image:
+    registry: docker.io
+    repository: backstage/backstage
+    tag: "1.31.0"
+
+  backstage:
+    # Basic configuration
+    appConfig:
+      app:
+        title: eBPF + AI Developer Portal
+        baseUrl: http://backstage.apps.k8s.labjp.xyz
+        
+      backend:
+        baseUrl: http://backstage.apps.k8s.labjp.xyz
+        cors:
+          origin: http://backstage.apps.k8s.labjp.xyz
+        database:
+          client: better-sqlite3
+          connection: ':memory:'
+          
+      integrations:
+        github:
+          - host: github.com
+            # Add your GitHub token here later if needed
+            # token: ${GITHUB_TOKEN}
+            
+      kubernetes:
+        clusterLocatorMethods:
+          - type: 'config'
+            clusters:
+              - name: 'ebpf-ai-cluster'
+                url: https://api.k8s.labjp.xyz:6443
+                authProvider: serviceAccount
+                skipTLSVerify: true
+                serviceAccountToken: ${KUBERNETES_SERVICE_ACCOUNT_TOKEN}
+                
+      catalog:
+        locations:
+          - type: url
+            target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/catalog-info.yaml
+            
+    extraEnvVars:
+      - name: NODE_TLS_REJECT_UNAUTHORIZED
+        value: "0"
+
+  postgresql:
+    enabled: false  # Using SQLite for simplicity
+    
+  ingress:
+    enabled: true
+    className: nginx
+    host: backstage.apps.k8s.labjp.xyz
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+      nginx.ingress.kubernetes.io/proxy-body-size: "50m"
