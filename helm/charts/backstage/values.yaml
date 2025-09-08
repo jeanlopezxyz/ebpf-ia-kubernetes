@@ -21,18 +21,13 @@ backstage:
         providers:
           guest:
             dangerouslyAllowOutsideDevelopment: true
+        environment: development
 
       permission:
         enabled: false
-
-      techdocs:
-        builder: local
-        generators:
-          techdocs: local
-        publisher:
-          type: local
-
+        
       catalog:
+        readonly: false
         providers:
           github:
             providerId:
@@ -43,6 +38,13 @@ backstage:
         locations:
           - type: url
             target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/docs/catalog-info.yaml
+
+      techdocs:
+        builder: local
+        generators:
+          techdocs: local
+        publisher:
+          type: local
 
 
   postgresql:
