@@ -40,31 +40,10 @@ backstage:
           - type: url
             target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/docs/catalog-info.yaml
 
-      kubernetes:
-        serviceLocatorMethod:
-          type: multiTenant
-        clusterLocatorMethods:
-          - type: config
-            clusters:
-              - name: ebpf-ai-cluster
-                url: https://api.k8s.labjp.xyz:6443
-                authProvider: serviceAccount
-                skipTLSVerify: true
-                serviceAccountToken: ${KUBERNETES_SERVICE_ACCOUNT_TOKEN}
 
   postgresql:
     enabled: false
 
-  extraEnvVars:
-    - name: KUBERNETES_SERVICE_ACCOUNT_TOKEN
-      valueFrom:
-        secretKeyRef:
-          name: backstage-secrets
-          key: KUBERNETES_SERVICE_ACCOUNT_TOKEN
-
-  envFrom:
-    - secretRef:
-        name: backstage-secrets
 
   ingress:
     enabled: true
