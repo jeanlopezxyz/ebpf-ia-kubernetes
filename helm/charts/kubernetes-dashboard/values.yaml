@@ -18,11 +18,8 @@ kubernetes-dashboard:
   ingress:
     enabled: true
     className: nginx
-    hosts:
-      - host: dashboard.apps.k8s.labjp.xyz
-        paths:
-          - path: /
-            pathType: Prefix
+    host: dashboard.apps.k8s.labjp.xyz
+    path: /
     annotations:
       nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
