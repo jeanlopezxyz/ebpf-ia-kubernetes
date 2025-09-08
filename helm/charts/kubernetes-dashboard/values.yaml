@@ -1,0 +1,29 @@
+kubernetes-dashboard:
+  protocolHttp: false
+  
+  service:
+    type: ClusterIP
+  
+  extraArgs:
+    - --enable-insecure-login
+    - --enable-skip-login
+  
+  settings:
+    clusterName: "ebpf-kvm-cluster"
+    itemsPerPage: 20
+  
+  metrics-server:
+    enabled: true
+
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: dashboard.apps.k8s.labjp.xyz
+        paths:
+          - path: /
+            pathType: Prefix
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/ssl-passthrough: "true"

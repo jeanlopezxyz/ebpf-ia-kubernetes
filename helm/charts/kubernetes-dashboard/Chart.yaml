@@ -1,0 +1,11 @@
+apiVersion: v2
+name: kubernetes-dashboard
+description: Kubernetes Dashboard with Ingress for external access
+type: application
+version: 0.1.0
+appVersion: "7.10.0"
+
+dependencies:
+  - name: kubernetes-dashboard
+    version: "7.10.0"
+    repository: https://kubernetes.github.io/dashboard
