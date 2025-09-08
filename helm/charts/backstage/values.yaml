@@ -1,14 +1,12 @@
 backstage:
   image:
-    registry: docker.io
     repository: backstage/backstage
     tag: "1.31.0"
 
   backstage:
-    # Basic configuration
     appConfig:
       app:
-        title: eBPF + AI Developer Portal
+        title: "eBPF + AI Developer Portal"
         baseUrl: http://backstage.apps.k8s.labjp.xyz
         
       backend:
@@ -18,35 +16,45 @@ backstage:
         database:
           client: better-sqlite3
           connection: ':memory:'
-          
-      integrations:
-        github:
-          - host: github.com
-            # Add your GitHub token here later if needed
-            # token: ${GITHUB_TOKEN}
-            
+
+      auth:
+        providers:
+          guest: {}
+
+      techdocs:
+        builder: local
+        generators:
+          techdocs: local
+        publisher:
+          type: local
+
+      catalog:
+        providers:
+          github:
+            providerId:
+              organization: 'jeanlopezxyz'
+              catalogPath: '/catalog-info.yaml'
+              filters:
+                branch: 'main'
+        locations:
+          - type: url
+            target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/docs/catalog-info.yaml
+
       kubernetes:
+        serviceLocatorMethod:
+          type: multiTenant
         clusterLocatorMethods:
-          - type: 'config'
+          - type: config
             clusters:
-              - name: 'ebpf-ai-cluster'
+              - name: ebpf-ai-cluster
                 url: https://api.k8s.labjp.xyz:6443
                 authProvider: serviceAccount
                 skipTLSVerify: true
                 serviceAccountToken: ${KUBERNETES_SERVICE_ACCOUNT_TOKEN}
-                
-      catalog:
-        locations:
-          - type: url
-            target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/catalog-info.yaml
-            
-    extraEnvVars:
-      - name: NODE_TLS_REJECT_UNAUTHORIZED
-        value: "0"
 
   postgresql:
-    enabled: false  # Using SQLite for simplicity
-    
+    enabled: false
+
   ingress:
     enabled: true
     className: nginx
@@ -54,4 +62,3 @@ backstage:
     annotations:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-      nginx.ingress.kubernetes.io/proxy-body-size: "50m"

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: backstage
-description: Backstage Developer Portal for eBPF + AI platform
+description: Backstage Developer Portal for eBPF + AI GitOps platform
 type: application
 version: 0.1.0
 appVersion: "1.31.0"
