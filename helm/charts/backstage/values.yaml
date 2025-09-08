@@ -55,6 +55,13 @@ backstage:
   postgresql:
     enabled: false
 
+  extraEnvVars:
+    - name: KUBERNETES_SERVICE_ACCOUNT_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: backstage-secrets
+          key: KUBERNETES_SERVICE_ACCOUNT_TOKEN
+
   ingress:
     enabled: true
     className: nginx
