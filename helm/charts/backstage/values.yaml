@@ -54,7 +54,11 @@ backstage:
   ingress:
     enabled: true
     className: nginx
-    host: backstage.apps.k8s.labjp.xyz
+    hosts:
+      - host: backstage.apps.k8s.labjp.xyz
+        paths:
+          - path: /
+            pathType: Prefix
     annotations:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
