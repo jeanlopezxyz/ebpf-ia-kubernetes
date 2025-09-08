@@ -62,6 +62,10 @@ backstage:
           name: backstage-secrets
           key: KUBERNETES_SERVICE_ACCOUNT_TOKEN
 
+  envFrom:
+    - secretRef:
+        name: backstage-secrets
+
   ingress:
     enabled: true
     className: nginx
