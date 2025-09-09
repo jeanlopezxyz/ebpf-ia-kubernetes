@@ -4,6 +4,8 @@
 
 Advanced threat detection service that combines rule-based detection with machine learning models. Supports both network traffic analysis and authentication log analysis, implementing algorithms at Rakuten Symphony level.
 
+🧪 **WEBHOOK TEST**: Testing automated GitHub → Tekton → Quay.io pipeline integration (2025-09-09).
+
 ## Architecture
 
 ```
