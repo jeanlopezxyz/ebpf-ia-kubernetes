@@ -1,0 +1,102 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ebpf-security-detector
+  title: eBPF Security Detector
+  description: Create a new eBPF-based security detector
+  tags:
+    - security
+    - ebpf
+    - monitoring
+    - threat-detection
+spec:
+  owner: security-team
+  type: service
+  parameters:
+    - title: Detector Configuration
+      required:
+        - detector_name
+        - target_events
+        - description
+      properties:
+        detector_name:
+          title: Detector Name
+          type: string
+          description: Name of the security detector (e.g., dns-monitor, file-access-tracker)
+          pattern: '^[a-z][a-z0-9-]*$'
+        target_events:
+          title: Target eBPF Events
+          type: string
+          description: Type of events to monitor
+          enum:
+            - network
+            - syscall
+            - file_access
+            - process
+            - security
+        description:
+          title: Description
+          type: string
+          description: What security threats does this detector monitor?
+        
+    - title: Detection Logic
+      required:
+        - detection_type
+      properties:
+        detection_type:
+          title: Detection Method
+          type: string
+          description: How should threats be detected?
+          enum:
+            - ml_model
+            - rule_based
+            - anomaly_detection
+        ml_model_type:
+          title: ML Model Type
+          type: string
+          description: Type of ML model (if using ML detection)
+          enum:
+            - classification
+            - clustering  
+            - neural_network
+          condition:
+            properties:
+              detection_type:
+                const: ml_model
+
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          detector_name: ${{ parameters.detector_name }}
+          target_events: ${{ parameters.target_events }}
+          description: ${{ parameters.description }}
+          detection_type: ${{ parameters.detection_type }}
+          ml_model_type: ${{ parameters.ml_model_type }}
+
+    - id: publish
+      name: Publish to Git
+      action: publish:github
+      input:
+        repoUrl: github.com/jeanlopezxyz/ebpf-ia-kubernetes
+        sourcePath: applications/${{ parameters.detector_name }}
+        gitCommitMessage: 'Add ${{ parameters.detector_name }} eBPF security detector'
+
+    - id: register
+      name: Register in Catalog  
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Pipeline
+        url: http://tekton-dashboard.apps.k8s.labjp.xyz/#/namespaces/ebpf-security/pipelineruns
+      - title: Grafana Dashboard
+        url: http://grafana.apps.k8s.labjp.xyz/d/${{ parameters.detector_name }}

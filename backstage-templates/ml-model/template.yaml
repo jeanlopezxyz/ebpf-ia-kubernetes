@@ -1,0 +1,113 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: ml-security-model
+  title: ML Security Model
+  description: Create a new machine learning model for threat detection
+  tags:
+    - security
+    - machine-learning
+    - ai
+    - threat-detection
+spec:
+  owner: ai-security-team
+  type: service
+  parameters:
+    - title: Model Configuration
+      required:
+        - model_name
+        - threat_category
+        - description
+      properties:
+        model_name:
+          title: Model Name
+          type: string
+          description: Name of the ML model (e.g., lateral-movement, data-exfil)
+          pattern: '^[a-z][a-z0-9-]*$'
+        threat_category:
+          title: Threat Category
+          type: string
+          description: Category of threats this model detects
+          enum:
+            - network_anomaly
+            - malware_detection
+            - lateral_movement
+            - data_exfiltration
+            - privilege_escalation
+        description:
+          title: Description
+          type: string
+          description: What specific security threats does this model detect?
+
+    - title: Model Architecture
+      required:
+        - algorithm
+        - training_data
+      properties:
+        algorithm:
+          title: ML Algorithm
+          type: string
+          description: Machine learning algorithm to use
+          enum:
+            - random_forest
+            - neural_network
+            - svm
+            - isolation_forest
+            - lstm
+        training_data:
+          title: Training Data Source
+          type: string
+          description: Source of training data
+          enum:
+            - network_logs
+            - system_calls
+            - process_behavior
+            - file_access
+            - user_behavior
+
+  steps:
+    - id: fetch-base
+      name: Fetch ML Model Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          model_name: ${{ parameters.model_name }}
+          threat_category: ${{ parameters.threat_category }}
+          description: ${{ parameters.description }}
+          algorithm: ${{ parameters.algorithm }}
+          training_data: ${{ parameters.training_data }}
+
+    - id: publish
+      name: Publish Model
+      action: publish:github
+      input:
+        repoUrl: github.com/jeanlopezxyz/ebpf-ia-kubernetes
+        sourcePath: models/${{ parameters.model_name }}
+        gitCommitMessage: 'Add ${{ parameters.model_name }} ML security model'
+
+    - id: trigger-training
+      name: Trigger Training Pipeline
+      action: http:backstage:request
+      input:
+        method: POST
+        url: http://tekton-dashboard.apps.k8s.labjp.xyz/api/pipelines
+        body:
+          name: ${{ parameters.model_name }}-training
+          namespace: ebpf-security
+
+    - id: register
+      name: Register Model
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Model Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Training Pipeline
+        url: http://tekton-dashboard.apps.k8s.labjp.xyz/#/namespaces/ebpf-security/pipelineruns
+      - title: Model Metrics
+        url: http://grafana.apps.k8s.labjp.xyz/d/ml-models

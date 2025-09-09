@@ -1,0 +1,42 @@
+site_name: eBPF + AI Security Platform
+site_description: Documentation for eBPF-based network security with AI threat detection
+
+nav:
+  - Home: index.md
+  - Security Architecture: 
+    - Overview: security/architecture/security-architecture.md
+    - eBPF Implementation: security/architecture/ebpf-implementation.md
+    - AI Models: security/architecture/ai-models.md
+  - Procedures:
+    - Incident Response: security/procedures/incident-response.md
+    - Deployment Guide: security/procedures/deployment.md
+    - Monitoring: security/procedures/monitoring.md
+  - Compliance:
+    - CIS Controls: security/compliance/cis-controls.md
+    - NIST Framework: security/compliance/nist-framework.md
+    - Audit Reports: security/compliance/audit-reports.md
+  - Templates:
+    - eBPF Detector: security/templates/ebpf-detector-template.yaml
+    - ML Model: security/templates/ml-model-template.yaml
+    - Security Policy: security/templates/security-policy-template.yaml
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: red
+      accent: red
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+
+plugins:
+  - search
+  - techdocs-core
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true

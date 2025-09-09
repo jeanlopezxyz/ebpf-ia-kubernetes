@@ -1,0 +1,84 @@
+# eBPF Security Detector Template
+
+This template creates a new eBPF-based security detector for the platform.
+
+## Parameters
+- **detector_name**: Name of the new detector (e.g., dns-monitor, file-access-monitor)
+- **target_events**: eBPF events to monitor (e.g., network, syscall, file)
+- **detection_logic**: ML model or rule-based detection logic
+
+## Generated Components
+
+### 1. eBPF Program
+```c
+// ebpf-programs/${{values.detector_name}}.c
+#include <linux/bpf.h>
+#include <bpf/bpf_helpers.h>
+
+struct event_t {
+    __u32 pid;
+    __u64 timestamp;
+    char comm[16];
+    // Add detector-specific fields
+};
+
+SEC("${{values.target_events}}")
+int ${{values.detector_name}}(struct ${{values.target_events}}_ctx *ctx) {
+    struct event_t event = {};
+    
+    // Collect event data
+    event.pid = bpf_get_current_pid_tgid() >> 32;
+    event.timestamp = bpf_ktime_get_ns();
+    bpf_get_current_comm(&event.comm, sizeof(event.comm));
+    
+    // Send to userspace
+    bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, &event, sizeof(event));
+    return 0;
+}
+```
+
+### 2. Go Monitor Service
+```go
+// cmd/${{values.detector_name}}/main.go
+package main
+
+import (
+    "github.com/cilium/ebpf"
+    "github.com/prometheus/client_golang/prometheus"
+)
+
+func main() {
+    // Load eBPF program
+    spec := ebpf.LoadCollectionSpec("${{values.detector_name}}.o")
+    coll := ebpf.NewCollection(spec)
+    
+    // Attach to kernel
+    coll.Programs["${{values.detector_name}}"].AttachKprobe(...)
+    
+    // Process events and send to ML detector
+    for event := range events {
+        processSecurityEvent(event)
+    }
+}
+```
+
+### 3. Kubernetes Deployment
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${{values.detector_name}}
+  namespace: ebpf-security
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${{values.detector_name}}
+  template:
+    spec:
+      containers:
+      - name: ${{values.detector_name}}
+        image: ebpf-security/${{values.detector_name}}:latest
+        securityContext:
+          privileged: true  # Required for eBPF
+```

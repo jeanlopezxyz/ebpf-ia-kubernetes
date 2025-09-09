@@ -1,0 +1,100 @@
+# ML Security Model Template
+
+Template for creating new machine learning models for threat detection.
+
+## Parameters
+- **model_name**: Name of the ML model (e.g., dns-anomaly, lateral-movement)
+- **model_type**: Type of model (classification, anomaly_detection, regression)
+- **input_features**: Features for model training
+- **threat_category**: Category of threats to detect
+
+## Generated Components
+
+### 1. Model Training Pipeline
+```yaml
+# tekton/pipelines/${{values.model_name}}-training.yaml
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: ${{values.model_name}}-training
+spec:
+  params:
+    - name: data-source
+      description: Training data source
+    - name: model-version
+      description: Model version to train
+  tasks:
+    - name: data-preparation
+      taskRef:
+        name: prepare-security-data
+    - name: model-training
+      taskRef:
+        name: train-ml-model
+      params:
+        - name: model-type
+          value: ${{values.model_type}}
+        - name: features
+          value: ${{values.input_features}}
+    - name: model-validation
+      taskRef:
+        name: validate-security-model
+    - name: model-deployment
+      taskRef:
+        name: deploy-ml-model
+```
+
+### 2. Model Inference Service
+```python
+# models/${{values.model_name}}/inference.py
+import numpy as np
+import joblib
+from flask import Flask, request, jsonify
+
+class ${{values.model_name | title}}Model:
+    def __init__(self):
+        self.model = joblib.load('${{values.model_name}}.pkl')
+        
+    def predict(self, features):
+        prediction = self.model.predict([features])
+        confidence = self.model.predict_proba([features]).max()
+        
+        return {
+            'threat_detected': bool(prediction[0]),
+            'confidence': float(confidence),
+            'threat_category': '${{values.threat_category}}'
+        }
+
+app = Flask(__name__)
+model = ${{values.model_name | title}}Model()
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.json
+    features = extract_features(data)
+    result = model.predict(features)
+    return jsonify(result)
+```
+
+### 3. Model Configuration
+```yaml
+# config/${{values.model_name}}-config.yaml
+model:
+  name: ${{values.model_name}}
+  version: "1.0.0"
+  type: ${{values.model_type}}
+  
+features:
+  input: ${{values.input_features}}
+  preprocessing:
+    - normalization
+    - feature_scaling
+    
+thresholds:
+  detection: 0.8
+  alert: 0.95
+  
+integration:
+  prometheus_metrics: true
+  grafana_dashboard: true
+  alert_manager: true
+```
