@@ -156,15 +156,22 @@ class TemporalAnomalyDetector(BaseDetectionModel):
         z_mean = keras.layers.Dense(VAE_CONFIG["latent_dim"])(x)
         z_log_var = keras.layers.Dense(VAE_CONFIG["latent_dim"])(x)
         
-        # Sampling layer
-        def sampling(args):
-            z_mean, z_log_var = args
-            batch = tf.shape(z_mean)[0]
-            dim = tf.shape(z_mean)[1]
-            epsilon = tf.random.normal(shape=(batch, dim))
-            return z_mean + tf.exp(0.5 * z_log_var) * epsilon
+        # Custom sampling layer for proper serialization
+        class SamplingLayer(keras.layers.Layer):
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+            
+            def call(self, inputs):
+                z_mean, z_log_var = inputs
+                batch = tf.shape(z_mean)[0]
+                dim = tf.shape(z_mean)[1]
+                epsilon = tf.random.normal(shape=(batch, dim))
+                return z_mean + tf.exp(0.5 * z_log_var) * epsilon
+            
+            def get_config(self):
+                return super().get_config()
         
-        z = keras.layers.Lambda(sampling, output_shape=(VAE_CONFIG["latent_dim"],))([z_mean, z_log_var])
+        z = SamplingLayer()([z_mean, z_log_var])
         
         # Decoder
         decoder_input = keras.layers.RepeatVector(self.sequence_length)(z)

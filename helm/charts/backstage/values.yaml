@@ -28,20 +28,23 @@ backstage:
         
       catalog:
         readonly: false
+        refreshIntervalSeconds: 60
         providers:
           github:
-            providerId:
+            ebpf-ai-provider:
               organization: 'jeanlopezxyz'
-              catalogPath: '/catalog-info.yaml'
+              catalogPath: '/docs/catalog-info.yaml'
               filters:
+                repository: 'ebpf-ia-kubernetes'
                 branch: 'main'
+              schedule:
+                frequency: { minutes: 1 }
+                timeout: { minutes: 3 }
         locations:
           - type: url
             target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/docs/catalog-info.yaml
-          - type: url
-            target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/backstage-templates/ebpf-detector/template.yaml
-          - type: url
-            target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/backstage-templates/ml-model/template.yaml
+        rules:
+          - allow: [Component, System, API, Resource, Location]
 
       techdocs:
         builder: local
