@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tekton-triggers-base
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"  # Install with base Tekton
+spec:
+  project: default
+  sources:
+    - repoURL: https://storage.googleapis.com/tekton-releases
+      path: triggers/latest
+      targetRevision: HEAD
+      ref: triggers
+    - repoURL: https://storage.googleapis.com/tekton-releases  
+      path: triggers/latest
+      targetRevision: HEAD
+      ref: interceptors
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tekton-pipelines
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - Replace=true

@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tekton-triggers-helm
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"  # Install with base Tekton
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: tekton-triggers
+    targetRevision: "*"
+    helm:
+      values: |
+        controller:
+          image:
+            repository: ghcr.io/tektoncd/triggers/controller
+            tag: "v0.33.0"
+          
+        webhook:
+          image:
+            repository: ghcr.io/tektoncd/triggers/webhook
+            tag: "v0.33.0"
+            
+        coreInterceptors:
+          image:
+            repository: ghcr.io/tektoncd/triggers/interceptors
+            tag: "v0.33.0"
+          enabled: true
+          
+        rbac:
+          create: true
+          
+        serviceAccount:
+          create: true
+          
+        resources:
+          controller:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 500m
+              memory: 500Mi
+              
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tekton-pipelines
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
