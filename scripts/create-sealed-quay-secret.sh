@@ -3,11 +3,47 @@
 # Create Sealed Secret for Quay.io credentials
 echo "🔐 Creating Sealed Secret for Quay.io credentials"
 
+# Check if sealed-secrets controller is running
+echo "⏳ Checking if Sealed Secrets controller is ready..."
+if ! kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=sealed-secrets -n kube-system --timeout=60s; then
+    echo "❌ Sealed Secrets controller not ready. Please ensure it's installed via ArgoCD:"
+    echo "   kubectl get applications sealed-secrets -n argocd"
+    exit 1
+fi
+
+# Check if kubeseal CLI is available
+if ! command -v kubeseal &> /dev/null; then
+    echo "📥 Installing kubeseal CLI..."
+    KUBESEAL_VERSION='0.24.0'
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "x86_64" ]; then
+        ARCH="amd64"
+    elif [ "$ARCH" = "aarch64" ]; then
+        ARCH="arm64"
+    fi
+    
+    wget "https://github.com/bitnami-labs/sealed-secrets/releases/download/v${KUBESEAL_VERSION}/kubeseal-${KUBESEAL_VERSION}-linux-${ARCH}.tar.gz"
+    tar -xzf "kubeseal-${KUBESEAL_VERSION}-linux-${ARCH}.tar.gz"
+    sudo install -m 755 kubeseal /usr/local/bin/kubeseal
+    rm "kubeseal-${KUBESEAL_VERSION}-linux-${ARCH}.tar.gz" kubeseal
+    echo "✅ kubeseal CLI installed"
+fi
+
 # Check if required environment variables are set
 if [ -z "$QUAY_USERNAME" ] || [ -z "$QUAY_TOKEN" ]; then
     echo "❌ Please set QUAY_USERNAME and QUAY_TOKEN environment variables"
-    echo "   export QUAY_USERNAME='robot\$yourusername+yourrobot'"
-    echo "   export QUAY_TOKEN='your-robot-token'"
+    echo ""
+    echo "📋 Steps to get Quay.io robot credentials:"
+    echo "1. Go to https://quay.io"
+    echo "2. Navigate to Repository → ebpf-ia-kubernetes (or create it)"
+    echo "3. Go to Settings → Robot Accounts"
+    echo "4. Click 'Create Robot Account'"
+    echo "5. Name: 'tekton-builder' with Write permissions"
+    echo "6. Copy the credentials:"
+    echo ""
+    echo "   export QUAY_USERNAME='robot\$yourusername+tektonbuilder'"
+    echo "   export QUAY_TOKEN='your-long-robot-token'"
+    echo "   $0"
     exit 1
 fi
 
@@ -39,7 +75,7 @@ stringData:
 EOF
 
 # Create sealed secret
-SEALED_SECRET_FILE="gitops/secrets/quay-io-sealed-secret.yaml"
+SEALED_SECRET_FILE="gitops/sealed-secrets/quay-io-sealed-secret.yaml"
 kubeseal -f "$TEMP_SECRET" -w "$SEALED_SECRET_FILE"
 
 # Clean up temp file
