@@ -67,7 +67,7 @@ argocd:
 applications:
   ebpf_ai:
     namespace: "ebpf-security"
-    git_repo: "https://github.com/jeanlopezxyz/ebpf-ia-gitops.git"
+    git_repo: "https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git"
     git_path: "helm/charts/ebpf-ai"
     git_branch: "main"
 
