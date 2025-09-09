@@ -138,8 +138,9 @@ ebpf-ai-apps (root)
 - **External Load Balancer**: pfSense HAProxy managed access in production mode
 
 ### Default Credentials
-- **ArgoCD**: admin/admin123
-- **Grafana**: admin/admin123
+- **ArgoCD**: admin/[sealed-secret-generated]
+- **Grafana**: admin/[sealed-secret-generated]
+- **Credentials**: Check `gitops/sealed-secrets/README.md` for generated passwords
 
 ## Development Notes
 

@@ -39,7 +39,7 @@ deploy: ## Deploy/update applications via ArgoCD (manual sync)
 	@kubectl port-forward svc/argocd-server -n argocd 8080:80 &
 	@PORT_PID=$$!; \
 	sleep 5; \
-	argocd login localhost:8080 --username admin --password admin123 --insecure; \
+	@echo "⚠️  Login manually: argocd login localhost:8080 --username admin --password [check sealed-secrets/README.md]"; \
 	argocd app sync app-of-apps --force; \
 	argocd app sync ebpf-ai --force; \
 	kill $$PORT_PID || true
@@ -84,7 +84,7 @@ port-forward-argocd: ## Setup port forwarding for ArgoCD only
 	@sleep 2
 	@echo ""
 	@echo "🚀 Starting ArgoCD port forward..."
-	@echo "   ArgoCD UI: http://localhost:8080 (admin/admin123)"
+	@echo "   ArgoCD UI: http://localhost:8080 (admin/[check sealed-secrets/README.md])"
 	@kubectl port-forward svc/argocd-server -n argocd 8080:80 >/dev/null 2>&1 &
 	@sleep 2
 	@echo ""
@@ -109,7 +109,7 @@ threats: ## Open threat detection dashboard via port-forward
 	@echo "🚨 Threat Detection Dashboard..."
 	@echo "First deploy applications with: make sync"
 	@echo "Then access via ArgoCD: https://localhost:8080"
-	@echo "Login: admin / admin123"
+	@echo "Login: admin / [check sealed-secrets/README.md]"
 
 clean: ## Clean up everything (delete cluster and resources)
 	@echo "🧹 Cleaning up eBPF + AI GitOps environment..."
@@ -155,8 +155,8 @@ info: ## Show access information
 	@echo "  External VIP: https://apps.k8s.labjp.xyz"
 	@echo ""
 	@echo "📡 Domain Access (all via NGINX Ingress):"
-	@echo "  ArgoCD: http://argocd.apps.k8s.labjp.xyz (admin/admin123)"
-	@echo "  Grafana: http://grafana.apps.k8s.labjp.xyz (admin/admin123)"
+	@echo "  ArgoCD: http://argocd.apps.k8s.labjp.xyz (admin/[sealed-secret])"
+	@echo "  Grafana: http://grafana.apps.k8s.labjp.xyz (admin/[sealed-secret])"
 	@echo "  Registry: http://registry.apps.k8s.labjp.xyz"
 	@echo "  eBPF-AI: http://ebpf-ai.apps.k8s.labjp.xyz"
 	@echo "  Tekton Dashboard: http://tekton-dashboard.apps.k8s.labjp.xyz"
@@ -165,9 +165,9 @@ info: ## Show access information
 	@echo "🔗 Port Forward Access (RECOMMENDED - always works):"
 	@echo "  Run: make port-forward"
 	@echo "  Then access:"
-	@echo "    Grafana Dashboard: http://localhost:3000 (admin/admin123)"
+	@echo "    Grafana Dashboard: http://localhost:3000 (admin/[sealed-secret])"
 	@echo "    Prometheus: http://localhost:9090"
-	@echo "    ArgoCD UI: http://localhost:8080 (admin/admin123)"
+	@echo "    ArgoCD UI: http://localhost:8080 (admin/[sealed-secret])"
 	@echo "    ML Detector API: http://localhost:5000"
 	@echo "    eBPF Monitor: http://localhost:8800"
 	@echo "    Tekton Dashboard: http://localhost:9097"

@@ -83,7 +83,7 @@
       - "🚀 ArgoCD GitOps installed successfully!"
       - "🌐 Access URL: https://argocd.apps.k8s.labjp.xyz (External LB)"
       - "👤 Username: admin"
-      - "🔐 Password: admin123"
+      - "🔐 Password: [check sealed-secrets/README.md for generated password]"
       - "💡 Port forward: kubectl port-forward svc/argocd-server -n argocd 8080:80"
 - name: Add required Helm repositories for dependencies
   kubernetes.core.helm_repository:

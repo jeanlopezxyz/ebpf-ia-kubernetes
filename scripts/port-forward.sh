@@ -16,11 +16,11 @@ echo ""
 echo "🚀 Starting port forwards..."
 
 # ArgoCD
-echo "   ArgoCD UI: http://localhost:8080 (admin/admin123)"
+echo "   ArgoCD UI: http://localhost:8080 (admin/[sealed-secret])"
 kubectl port-forward svc/argocd-server -n argocd 8080:80 >/dev/null 2>&1 &
 
 # Grafana  
-echo "   Grafana Dashboard: http://localhost:3000 (admin/admin123)"
+echo "   Grafana Dashboard: http://localhost:3000 (admin/[sealed-secret])"
 kubectl port-forward svc/grafana -n grafana 3000:3000 >/dev/null 2>&1 &
 
 # Prometheus
@@ -49,8 +49,8 @@ echo ""
 echo "✅ All port forwards active!"
 echo ""
 echo "🌐 Access URLs:"
-echo "   ArgoCD:      http://localhost:8080 (admin/admin123)"
-echo "   Grafana:     http://localhost:3000 (admin/admin123)" 
+echo "   ArgoCD:      http://localhost:8080 (admin/[sealed-secret])"
+echo "   Grafana:     http://localhost:3000 (admin/[sealed-secret])" 
 echo "   Prometheus:  http://localhost:9090"
 echo "   Registry:    http://localhost:5001"
 echo "   ML Detector: http://localhost:5000"

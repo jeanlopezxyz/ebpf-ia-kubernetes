@@ -34,7 +34,7 @@
       - "   ArgoCD UI: https://argocd.apps.k8s.labjp.xyz"
       - "   ArgoCD CLI: argocd login argocd.apps.k8s.labjp.xyz --grpc-web"
       - "   Username: admin"
-      - "   Password: admin123"
+      - "   Password: [sealed-secret - check gitops/sealed-secrets/README.md]"
       - ""
       - "📊 APPLICATION ACCESS (External URLs):"
       - "   Grafana Dashboard: https://grafana.apps.k8s.labjp.xyz"
