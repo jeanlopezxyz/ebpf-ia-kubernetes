@@ -12,14 +12,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/jeanlopezxyz/ebpf-ia-gitops.git
+    repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
     targetRevision: main
-    path: gitops/tekton-resources
-    directory:
-      recurse: true
+    path: helm/charts/tekton-resources
   destination:
     server: https://kubernetes.default.svc
-    namespace: ebpf-security
+    namespace: tekton
   syncPolicy:
     automated:
       prune: true

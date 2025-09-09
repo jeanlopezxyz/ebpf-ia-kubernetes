@@ -1,0 +1,14 @@
+tekton:
+  namespace: tekton
+  
+registry:
+  url: registry.apps.k8s.labjp.xyz
+  internal_url: registry.registry.svc.cluster.local:5000
+  
+images:
+  ebpf_monitor: ebpf-monitor
+  ml_detector: ml-detector
+  
+git:
+  repository: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
+  branch: main
