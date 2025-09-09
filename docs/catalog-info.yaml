@@ -2,11 +2,55 @@ apiVersion: backstage.io/v1alpha1
 kind: System
 metadata:
   name: ebpf-ai-platform
-  title: eBPF + AI GitOps Platform
+  title: eBPF + AI Security Platform
   description: Complete platform for eBPF-based network monitoring with AI threat detection
+  tags:
+    - security
+    - ebpf
+    - ai
 spec:
-  owner: platform-team
+  owner: group:default/security-team
   domain: security
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: security-team
+  title: Security Team
+  description: Platform security and architecture team
+spec:
+  type: team
+  children: [ai-team, ebpf-team, security-ops-team]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: ai-team
+  title: AI Security Team
+  description: Team responsible for AI threat detection models
+spec:
+  type: team
+  parent: security-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: ebpf-team
+  title: eBPF Team
+  description: Team responsible for eBPF monitoring and kernel instrumentation
+spec:
+  type: team
+  parent: security-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: security-ops-team
+  title: Security Operations Team
+  description: Team responsible for security operations and incident response
+spec:
+  type: team
+  parent: security-team
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Component
@@ -21,10 +65,10 @@ metadata:
 spec:
   type: service
   lifecycle: production
-  owner: ai-team
+  owner: group:default/ai-team
   system: ebpf-ai-platform
   providesApis:
-    - ml-detection-api
+    - api:default/ml-detection-api
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Component
@@ -39,10 +83,10 @@ metadata:
 spec:
   type: service
   lifecycle: production
-  owner: ebpf-team
+  owner: group:default/ebpf-team
   system: ebpf-ai-platform
   providesApis:
-    - ebpf-metrics-api
+    - api:default/ebpf-metrics-api
 ---
 apiVersion: backstage.io/v1alpha1
 kind: API
@@ -53,7 +97,7 @@ metadata:
 spec:
   type: openapi
   lifecycle: production
-  owner: ai-team
+  owner: group:default/ai-team
   system: ebpf-ai-platform
   definition: |
     openapi: 3.0.0
@@ -71,3 +115,48 @@ spec:
       /metrics:
         get:
           summary: Prometheus metrics endpoint
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: ebpf-metrics-api
+  title: eBPF Metrics API
+  description: Network metrics and events collected via eBPF programs
+  tags:
+    - api
+    - metrics
+    - ebpf
+    - network
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:default/ebpf-team
+  system: ebpf-ai-platform
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: eBPF Metrics API
+      version: 1.0.0
+      description: Network monitoring metrics collected via eBPF
+    servers:
+      - url: http://ebpf-monitor.ebpf-security:8800
+        description: Internal cluster access
+    paths:
+      /health:
+        get:
+          summary: Health check endpoint
+          responses:
+            '200':
+              description: Service is healthy
+      /metrics:
+        get:
+          summary: eBPF network metrics
+          responses:
+            '200':
+              description: Prometheus metrics format
+      /events:
+        get:
+          summary: Network security events
+          responses:
+            '200':
+              description: Real-time security events
