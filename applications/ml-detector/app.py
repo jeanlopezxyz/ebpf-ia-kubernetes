@@ -3,6 +3,7 @@
 Main Flask application for ML Detector.
 
 Simplified and maintainable entry point that coordinates all components.
+Updated with VAE serialization fix for temporal anomaly detection.
 """
 from __future__ import annotations
 
