@@ -38,7 +38,7 @@ All credentials are encrypted using Sealed Secrets:
 
 ### GitHub Webhook Secret
 
-- **Secret Token**: `webhook-secret-token-2024`
+- **Secret Token**: `[sealed-secret-generated]` (check sealed-secrets/README.md)
 - **Purpose**: Validates webhook authenticity from GitHub
 - **Location**: `gitops/sealed-secrets/github-webhook-secret-sealed.yaml`
 
@@ -92,7 +92,7 @@ Navigate to: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/settings/hooks
 |-------|-------|
 | Payload URL | `https://webhook.apps.k8s.labjp.xyz` |
 | Content type | `application/json` |
-| Secret | `webhook-secret-token-2024` |
+| Secret | `[sealed-secret]` (see sealed-secrets/README.md) |
 | SSL verification | ✅ Enable SSL verification |
 | Events | `Just the push event` |
 | Active | ✅ Enabled |

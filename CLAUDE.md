@@ -149,7 +149,7 @@ ebpf-ai-apps (root)
 
 ### GitHub Webhook Automation
 - **Webhook URL**: https://webhook.apps.k8s.labjp.xyz
-- **Secret**: webhook-secret-token-2024
+- **Secret**: [sealed-secret] (see sealed-secrets/README.md)
 - **Trigger**: Push events to main branch with applications/ changes
 - **Flow**: GitHub → Webhook → Tekton → Quay.io → ArgoCD → Deploy
 - **Documentation**: `docs/WEBHOOK-AUTOMATION.md`

@@ -27,12 +27,19 @@ This directory contains encrypted secrets that are safe to commit to Git.
 - **Namespace**: `ebpf-security`
 - **Usage**: Links Quay.io credentials to Tekton pipelines
 
+### 5. GitHub Webhook Secret
+- **File**: `github-webhook-secret-sealed.yaml`
+- **Namespace**: `ebpf-security`
+- **Keys**: `secretToken`
+- **Usage**: GitHub webhook validation
+
 ## 🚀 Generated Passwords
 
-**IMPORTANT**: Save these passwords securely - they are only shown once:
+**IMPORTANT**: Save these credentials securely - they are only shown once:
 
 - **Grafana Admin**: `MIVl6ww1DkKZidZyuHHXS5c4N`
 - **ArgoCD Admin**: `oSsMYDYPSzcXXexpW2GdSrM2g`
+- **GitHub Webhook**: `2N1ydZkoZ1iuZPHn5mnI0A8bK`
 
 ## 🔄 Updating Secrets
 

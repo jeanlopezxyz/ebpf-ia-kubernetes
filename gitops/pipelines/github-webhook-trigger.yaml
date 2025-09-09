@@ -110,8 +110,8 @@ metadata:
   name: github-webhook-secret
   namespace: ebpf-security
 type: Opaque
-stringData:
-  secretToken: "webhook-secret-token-2024"
+# Secret removed - now managed by sealed secret
+# Reference: gitops/sealed-secrets/github-webhook-secret-sealed.yaml
 ---
 apiVersion: v1
 kind: ServiceAccount

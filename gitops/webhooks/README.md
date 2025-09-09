@@ -41,7 +41,7 @@ This application requires:
 |--------------|-------|
 | Payload URL | `https://webhook.apps.k8s.labjp.xyz` |
 | Content type | `application/json` |
-| Secret | `webhook-secret-token-2024` |
+| Secret | `[sealed-secret]` (see sealed-secrets/README.md) |
 | SSL verification | ✅ Enable SSL verification |
 | Events | `Just the push event` |
 | Active | ✅ Enabled |
@@ -65,7 +65,7 @@ Pipeline executes when:
 
 All secrets managed via Sealed Secrets:
 
-- **GitHub Webhook**: `webhook-secret-token-2024` (sealed)
+- **GitHub Webhook**: `[sealed-secret-generated]` (encrypted)
 - **Quay.io Registry**: `jealopez+ebpf_ia` credentials (sealed)  
 - **TLS Certificate**: Auto-managed via cert-manager
 
