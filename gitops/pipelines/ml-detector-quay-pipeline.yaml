@@ -4,9 +4,10 @@ metadata:
   name: ml-detector-quay-build
   namespace: ebpf-security
 spec:
-  serviceAccountName: tekton-builder-sa
   pipelineRef:
     name: application-build-ci
+  taskRunTemplate:
+    serviceAccountName: tekton-builder-sa
   params:
     - name: git-url
       value: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
