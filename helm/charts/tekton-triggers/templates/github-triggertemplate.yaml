@@ -1,0 +1,49 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: github-template
+  namespace: tekton
+spec:
+  params:
+    - name: git-repo-url
+      description: Git repository URL
+    - name: git-repo-name
+      description: Git repository name
+    - name: git-revision
+      description: Git revision
+    - name: git-commit-message
+      description: Git commit message
+    - name: git-commit-author
+      description: Git commit author
+    - name: git-branch
+      description: Git branch
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: ebpf-ai-build-
+        namespace: tekton
+        labels:
+          app: ebpf-ai
+          trigger: github-webhook
+      spec:
+        pipelineRef:
+          name: ebpf-ai-pipeline
+        params:
+          - name: git-repo-url
+            value: $(tt.params.git-repo-url)
+          - name: git-revision
+            value: $(tt.params.git-revision)
+          - name: image-name
+            value: ebpf-ai
+          - name: image-tag
+            value: $(tt.params.git-revision)
+        workspaces:
+          - name: shared-data
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 1Gi

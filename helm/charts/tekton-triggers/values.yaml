@@ -1,0 +1,17 @@
+tektonTriggers:
+  namespace: tekton
+  
+github:
+  webhookSecret: "your-github-webhook-secret-here"
+  
+eventListener:
+  name: github-listener
+  serviceAccount: tekton-triggers-sa
+  
+ingress:
+  enabled: true
+  className: nginx
+  host: tekton-webhook.apps.k8s.labjp.xyz
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"

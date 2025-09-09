@@ -17,6 +17,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: tekton-pipelines-webhook
+                name: el-github-listener
                 port:
                   number: 8080

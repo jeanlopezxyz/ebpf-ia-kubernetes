@@ -1,0 +1,33 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener
+  namespace: tekton
+spec:
+  triggers:
+    - name: github-push-trigger
+      bindings:
+        - ref: github-binding
+      template:
+        ref: github-template
+      interceptors:
+        - github:
+            secretRef:
+              secretName: github-webhook-secret
+              secretKey: secretToken
+            eventTypes:
+              - push
+  resources:
+    kubernetesResource:
+      spec:
+        template:
+          spec:
+            serviceAccountName: tekton-triggers-sa
+            containers:
+              - resources:
+                  requests:
+                    memory: "64Mi"
+                    cpu: "250m"
+                  limits:
+                    memory: "128Mi"
+                    cpu: "500m"
