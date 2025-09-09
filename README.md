@@ -12,26 +12,36 @@ This project implements a complete GitOps workflow for the eBPF + AI monitoring 
 ## 📁 Project Structure
 
 ```
-ebpf-ia-gitops/
+ebpf-ia-kubernetes/
 ├── ansible/
 │   ├── bootstrap.yml              # Main bootstrap playbook
 │   ├── inventory/
 │   │   └── localhost.yml
 │   ├── roles/
-│   │   ├── minikube/
-│   │   ├── cilium/
-│   │   └── argocd/
+│   │   ├── kubeadm/              # Kubernetes cluster setup
+│   │   ├── cilium/               # CNI with eBPF
+│   │   ├── nginx-ingress/        # Ingress controller
+│   │   └── argocd/               # GitOps controller
 │   └── group_vars/
 │       └── all.yml
 ├── helm/
 │   ├── charts/
-│   │   ├── infrastructure/        # Cilium, NGINX Ingress, etc.
-│   │   └── ebpf-ai/              # Main application chart
+│   │   ├── ebpf-ai/              # Main application chart
+│   │   ├── backstage/            # Developer portal
+│   │   ├── tekton-triggers/      # CI/CD automation
+│   │   └── tekton-resources/     # CI/CD pipelines
 │   └── helmfile.yaml
+├── backstage/                    # Developer portal configuration
+│   ├── docs/                     # Documentation & service catalog
+│   ├── templates/                # Scaffolding templates
+│   ├── catalog/                  # Catalog management
+│   └── config/                   # Backstage configuration
 ├── gitops/
 │   ├── applications/             # ArgoCD Application manifests
 │   └── app-of-apps.yaml         # ArgoCD App-of-Apps pattern
-├── src/                         # Application source code (from original project)
+├── applications/                 # Application source code
+│   ├── ml-detector/              # Python AI service
+│   └── ebpf-monitor/             # Go eBPF service
 └── docs/
     └── deployment.md
 ```

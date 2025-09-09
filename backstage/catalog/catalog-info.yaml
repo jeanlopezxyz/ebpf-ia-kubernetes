@@ -1,0 +1,9 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: ebpf-ai-catalog
+  title: eBPF + AI Security Platform Catalog
+  description: Central catalog for all eBPF + AI security platform components
+spec:
+  type: url
+  target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/backstage/docs/catalog-info.yaml

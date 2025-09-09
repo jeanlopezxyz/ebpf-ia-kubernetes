@@ -33,7 +33,7 @@ backstage:
           github:
             ebpf-ai-provider:
               organization: 'jeanlopezxyz'
-              catalogPath: '/backstage/docs/catalog-info.yaml'
+              catalogPath: '/docs/catalog-info.yaml'
               filters:
                 repository: 'ebpf-ia-kubernetes'
                 branch: 'main'
@@ -42,7 +42,7 @@ backstage:
                 timeout: { minutes: 3 }
         locations:
           - type: url
-            target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/backstage/docs/catalog-info.yaml
+            target: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes/blob/main/docs/catalog-info.yaml
         rules:
           - allow: [Component, System, API, Resource, Location]
 
