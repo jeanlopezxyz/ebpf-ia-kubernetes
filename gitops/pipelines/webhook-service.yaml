@@ -14,7 +14,7 @@ spec:
       port: 8080
       protocol: TCP
       targetPort: 8080
-      nodePort: 30080
+      nodePort: 30082
   selector:
     app.kubernetes.io/managed-by: EventListener
     app.kubernetes.io/part-of: Triggers

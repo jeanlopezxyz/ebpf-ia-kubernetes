@@ -6,7 +6,7 @@ echo "=========================================================="
 
 # Get node IP and webhook URL
 NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
-WEBHOOK_PORT=30080
+WEBHOOK_PORT=30082
 WEBHOOK_URL="http://${NODE_IP}:${WEBHOOK_PORT}"
 
 echo "📍 Webhook Configuration:"

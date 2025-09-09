@@ -174,7 +174,7 @@ For pipeline failures:
 For production deployments with external load balancer:
 - **TCP Pass-through**: API access via port 6443 without SSL termination
 - **SSL Termination**: Application access via ports 80/443 with Let's Encrypt certificates  
-- **Fixed NodePorts**: 30080 (HTTP), 30443 (HTTPS) for stable configuration
+- **Fixed NodePorts**: 30080 (HTTP), 30443 (HTTPS), 30082 (GitHub Webhook) for stable configuration
 - **VIP Configuration**: Dedicated Virtual IP for Kubernetes services
 
 The system prioritizes GitOps principles with everything managed declaratively through Git, automated CI/CD via Tekton, and comprehensive observability through Prometheus/Grafana stack.
