@@ -1,20 +1,24 @@
+# WEBHOOK AUTOMATION - Complete GitHub Integration
+# EventListener + TriggerBinding + TriggerTemplate + RBAC + Ingress + Service
+
+---
 apiVersion: triggers.tekton.dev/v1beta1
 kind: EventListener
 metadata:
   name: github-webhook-listener
   namespace: ebpf-security
   labels:
-    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/name: tekton-automation
     app.kubernetes.io/component: eventlistener
     app.kubernetes.io/part-of: ebpf-ai-system
 spec:
-  serviceAccountName: tekton-triggers-example-sa
+  serviceAccountName: tekton-webhook-sa
   resources:
     kubernetesResource:
       spec:
         template:
           spec:
-            serviceAccountName: tekton-triggers-example-sa
+            serviceAccountName: tekton-webhook-sa
             containers:
             - resources:
                 requests:
@@ -24,20 +28,21 @@ spec:
                   memory: "128Mi"
                   cpu: "200m"
   triggers:
-    - name: ml-detector-trigger
+    - name: ml-detector-webhook-trigger
       bindings:
-        - ref: github-push-binding
+        - ref: github-webhook-binding
       template:
-        ref: ml-detector-trigger-template
+        ref: ml-detector-webhook-template
+
 ---
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerBinding
 metadata:
-  name: github-push-binding
+  name: github-webhook-binding
   namespace: ebpf-security
   labels:
-    app.kubernetes.io/name: tekton-webhook
-    app.kubernetes.io/component: trigger-binding
+    app.kubernetes.io/name: tekton-automation
+    app.kubernetes.io/component: triggerbinding
     app.kubernetes.io/part-of: ebpf-ai-system
 spec:
   params:
@@ -45,30 +50,43 @@ spec:
       value: $(body.head_commit.id)
     - name: git-repository-url
       value: $(body.repository.clone_url)
+    - name: git-repository-name
+      value: $(body.repository.name)
+    - name: git-commit-message
+      value: $(body.head_commit.message)
+
 ---
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerTemplate
 metadata:
-  name: ml-detector-trigger-template
+  name: ml-detector-webhook-template
   namespace: ebpf-security
   labels:
-    app.kubernetes.io/name: tekton-webhook
-    app.kubernetes.io/component: trigger-template
+    app.kubernetes.io/name: tekton-automation
+    app.kubernetes.io/component: triggertemplate
     app.kubernetes.io/part-of: ebpf-ai-system
 spec:
   params:
     - name: git-revision
       default: main
     - name: git-repository-url
+    - name: git-repository-name
+      default: ebpf-ia-kubernetes
+    - name: git-commit-message
+      default: "Automated build"
   resourcetemplates:
     - apiVersion: tekton.dev/v1
       kind: PipelineRun
       metadata:
-        generateName: webhook-ml-detector-
+        generateName: webhook-automation-
         namespace: ebpf-security
         labels:
           app: ml-detector
           trigger: github-webhook
+          git.commit: $(tt.params.git-revision)
+        annotations:
+          git.repository: $(tt.params.git-repository-url)
+          git.message: $(tt.params.git-commit-message)
       spec:
         pipelineRef:
           name: application-build-ci
@@ -102,24 +120,65 @@ spec:
           - name: dockerconfig
             secret:
               secretName: quay-io-secret
+
 ---
+# RBAC for webhook automation
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: tekton-triggers-example-sa
+  name: tekton-webhook-sa
   namespace: ebpf-security
   labels:
-    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/name: tekton-automation
     app.kubernetes.io/component: serviceaccount
     app.kubernetes.io/part-of: ebpf-ai-system
+
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-webhook-eventlistener-binding
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-automation
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: ebpf-ai-system
+subjects:
+- kind: ServiceAccount
+  name: tekton-webhook-sa
+  namespace: ebpf-security
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-roles
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-webhook-eventlistener-cluster
+  labels:
+    app.kubernetes.io/name: tekton-automation
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: ebpf-ai-system
+subjects:
+- kind: ServiceAccount
+  name: tekton-webhook-sa
+  namespace: ebpf-security
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-clusterroles
+
+---
+# Webhook public exposure
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: github-webhook-ingress
   namespace: ebpf-security
   labels:
-    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/name: tekton-automation
     app.kubernetes.io/component: ingress
     app.kubernetes.io/part-of: ebpf-ai-system
   annotations:
@@ -140,7 +199,9 @@ spec:
             name: el-github-webhook-listener
             port:
               number: 8080
+
 ---
+# NodePort service for webhook
 apiVersion: v1
 kind: Service
 metadata:

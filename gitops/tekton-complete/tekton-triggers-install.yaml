@@ -1,0 +1,47 @@
+# TEKTON TRIGGERS - Complete Installation via ArgoCD PreSync Hook
+# This installs the entire Tekton Triggers stack in a GitOps way
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: install-tekton-triggers
+  namespace: tekton-pipelines
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  template:
+    spec:
+      serviceAccountName: tekton-installer
+      restartPolicy: OnFailure
+      containers:
+      - name: installer
+        image: bitnami/kubectl:latest
+        command: ["/bin/bash"]
+        args: 
+        - -c
+        - |
+          echo "🚀 Installing Tekton Triggers via ArgoCD..."
+          kubectl apply -f https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml
+          kubectl apply -f https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml
+          echo "✅ Tekton Triggers installation completed"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-installer
+  namespace: tekton-pipelines
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-installer-admin
+subjects:
+- kind: ServiceAccount
+  name: tekton-installer
+  namespace: tekton-pipelines
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
