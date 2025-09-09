@@ -1,0 +1,31 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-webhook-listener
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: eventlistener
+    app.kubernetes.io/part-of: ebpf-ai-system
+spec:
+  serviceAccountName: tekton-triggers-example-sa
+  triggers:
+    - name: ml-detector-trigger
+      bindings:
+        - ref: github-push-binding
+      template:
+        ref: ml-detector-trigger-template
+  resources:
+    kubernetesResource:
+      spec:
+        template:
+          spec:
+            serviceAccountName: tekton-triggers-example-sa
+            containers:
+            - resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"

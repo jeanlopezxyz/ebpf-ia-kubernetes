@@ -1,0 +1,76 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: ml-detector-trigger-template
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: trigger-template
+    app.kubernetes.io/part-of: ebpf-ai-system
+spec:
+  params:
+    - name: git-revision
+      description: The git revision (commit SHA)
+      default: main
+    - name: git-repository-url
+      description: The git repository URL
+    - name: git-repository-name
+      description: The name of the repository
+      default: ebpf-ia-kubernetes
+    - name: git-branch
+      description: The git branch reference
+      default: refs/heads/main
+    - name: git-commit-message
+      description: The commit message
+      default: "Automated build"
+    - name: git-author
+      description: The commit author
+      default: "Developer"
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: webhook-ml-detector-
+        namespace: ebpf-security
+        labels:
+          app: ml-detector
+          trigger: github-webhook
+          git.commit: $(tt.params.git-revision)
+        annotations:
+          git.repository: $(tt.params.git-repository-url)
+          git.branch: $(tt.params.git-branch)
+          git.author: $(tt.params.git-author)
+          git.message: $(tt.params.git-commit-message)
+      spec:
+        pipelineRef:
+          name: application-build-ci
+        taskRunTemplate:
+          serviceAccountName: tekton-builder-sa
+        params:
+          - name: git-url
+            value: $(tt.params.git-repository-url)
+          - name: git-revision
+            value: $(tt.params.git-revision)
+          - name: image-registry
+            value: quay.io/jealopez
+          - name: image-name
+            value: ml-detector
+          - name: dockerfile-path
+            value: applications/ml-detector/Dockerfile
+          - name: context-path
+            value: applications/ml-detector
+          - name: argo-app-name
+            value: ebpf-ai
+        workspaces:
+          - name: shared-data
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 1Gi
+                storageClassName: local-path
+          - name: dockerconfig
+            secret:
+              secretName: quay-io-secret

@@ -26,10 +26,15 @@ make test              # Basic functionality validation
 
 ### Development Workflow
 ```bash
-# Deploy changes
+# Deploy changes (automated via GitHub webhook)
 git add . && git commit -m "description" && git push origin main
-# ArgoCD auto-syncs within 3 minutes, or force with:
+# GitHub webhook triggers Tekton pipeline automatically
+# Pipeline builds image and pushes to Quay.io
+# ArgoCD auto-syncs new image within 3 minutes, or force with:
 make sync
+
+# Webhook automation for applications/ changes:
+# Git Push → GitHub Webhook → Tekton → Quay.io → ArgoCD → Deploy
 
 # Access services
 kubectl port-forward svc/argocd-server -n argocd 8080:80
@@ -141,6 +146,13 @@ ebpf-ai-apps (root)
 - **ArgoCD**: admin/[sealed-secret-generated]
 - **Grafana**: admin/[sealed-secret-generated]
 - **Credentials**: Check `gitops/sealed-secrets/README.md` for generated passwords
+
+### GitHub Webhook Automation
+- **Webhook URL**: https://webhook.apps.k8s.labjp.xyz
+- **Secret**: webhook-secret-token-2024
+- **Trigger**: Push events to main branch with applications/ changes
+- **Flow**: GitHub → Webhook → Tekton → Quay.io → ArgoCD → Deploy
+- **Documentation**: `docs/WEBHOOK-AUTOMATION.md`
 
 ## Development Notes
 

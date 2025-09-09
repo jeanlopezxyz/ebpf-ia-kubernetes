@@ -1,0 +1,23 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: github-push-binding
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: trigger-binding
+    app.kubernetes.io/part-of: ebpf-ai-system
+spec:
+  params:
+    - name: git-revision
+      value: $(body.head_commit.id)
+    - name: git-repository-url
+      value: $(body.repository.clone_url)
+    - name: git-repository-name
+      value: $(body.repository.name)
+    - name: git-branch
+      value: $(body.ref)
+    - name: git-commit-message
+      value: $(body.head_commit.message)
+    - name: git-author
+      value: $(body.head_commit.author.name)
