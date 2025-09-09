@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tekton-triggers
+  name: tekton-triggers-base
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -10,11 +10,11 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/tektoncd/triggers
-    path: config
+    repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
+    path: gitops/tekton-simple
     targetRevision: main
     directory:
-      exclude: "examples/"
+      include: "*.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: tekton-pipelines
@@ -22,12 +22,6 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
