@@ -68,15 +68,16 @@ deployment_mode:
 ```
 - NodePort services
 - Podman driver  
-- No MetalLB (simplified networking)
-- Access via: `http://192.168.67.2:31055/argocd`
+- Simplified networking (no external load balancer)
+- Access via: `http://node-ip:nodeport`
 
 **Production Mode:**
 ```yaml
 deployment_mode:
   type: "prod"  
+  external_lb: true
 ```
-- LoadBalancer services with MetalLB
+- NodePort services with external load balancer (pfSense HAProxy)
 - QEMU driver with bridge networking
 - Real network IPs for direct access
 
@@ -134,7 +135,7 @@ ebpf-ai-apps (root)
 ### Service Access Patterns
 - **Ingress Routes**: `/argocd`, `/grafana`, `/dashboard` via NGINX
 - **NodePort**: Direct service access in lab mode
-- **LoadBalancer**: MetalLB managed IPs in production mode
+- **External Load Balancer**: pfSense HAProxy managed access in production mode
 
 ### Default Credentials
 - **ArgoCD**: admin/admin123
@@ -168,11 +169,11 @@ For pipeline failures:
 - **ArgoCD OutOfSync**: Often due to Helm template validation errors - check logs
 - **Registry connectivity**: Use internal IP `192.168.67.2:5000` for in-cluster access
 
-### MetalLB Configuration (Bridge Networking)
-For KVM/QEMU bridge networking environments, MetalLB requires specific configuration:
-- **L2 Native Mode**: FRR/BGP disabled (`speaker.frr.enabled: false`)
-- **Host Networking**: Speaker uses `hostNetwork: true` for direct interface access
-- **Interface Specific**: L2Advertisement targets `enp1s0` interface explicitly
-- **Node Selector**: Restricts announcement to specific node in single-node setups
+### External Load Balancer Configuration (pfSense HAProxy)
+For production deployments with external load balancer:
+- **TCP Pass-through**: API access via port 6443 without SSL termination
+- **SSL Termination**: Application access via ports 80/443 with Let's Encrypt certificates  
+- **Fixed NodePorts**: 30080 (HTTP), 30443 (HTTPS) for stable configuration
+- **VIP Configuration**: Dedicated Virtual IP for Kubernetes services
 
 The system prioritizes GitOps principles with everything managed declaratively through Git, automated CI/CD via Tekton, and comprehensive observability through Prometheus/Grafana stack.

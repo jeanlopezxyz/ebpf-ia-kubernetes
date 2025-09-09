@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `ansible/`: Cluster bootstrap/cleanup and roles (minikube, cilium, metallb, argocd, ingress, storage). Inventory in `ansible/inventory/`; globals in `ansible/group_vars/all.yml`.
+- `ansible/`: Cluster bootstrap/cleanup and roles (kubernetes, cilium, nginx-ingress, argocd, storage). Inventory in `ansible/inventory/`; globals in `ansible/group_vars/all.yml`.
 - `helm/charts/ebpf-ai/`: Main app chart (Deployments/Services/HPA/Ingress). Grafana dashboards under `grafana/*.json` loaded by sidecar.
 - `gitops/`: Argo CD App-of-Apps in `app-of-apps.yaml`; app specs in `gitops/applications/`.
 - `applications/`: App sources + Dockerfiles — `ml-detector` (Python) and `ebpf-monitor` (Go).

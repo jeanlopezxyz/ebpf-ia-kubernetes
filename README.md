@@ -19,14 +19,13 @@ ebpf-ia-gitops/
 │   │   └── localhost.yml
 │   ├── roles/
 │   │   ├── minikube/
-│   │   ├── metallb/
 │   │   ├── cilium/
 │   │   └── argocd/
 │   └── group_vars/
 │       └── all.yml
 ├── helm/
 │   ├── charts/
-│   │   ├── infrastructure/        # MetalLB, Cilium, etc.
+│   │   ├── infrastructure/        # Cilium, NGINX Ingress, etc.
 │   │   └── ebpf-ai/              # Main application chart
 │   └── helmfile.yaml
 ├── gitops/

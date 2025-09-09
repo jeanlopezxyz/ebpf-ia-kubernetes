@@ -151,8 +151,8 @@ dev: ## Setup development environment with hot-reload
 info: ## Show access information
 	@echo "🔍 eBPF + AI GitOps Access Information:"
 	@echo ""
-	@echo "🌐 LoadBalancer + Ingress Access (via MetalLB 10.0.10.101):"
-	@echo "  NGINX Ingress LoadBalancer: http://10.0.10.101"
+	@echo "🌐 External LoadBalancer + Ingress Access (via pfSense HAProxy):"
+	@echo "  External VIP: https://apps.k8s.labjp.xyz"
 	@echo ""
 	@echo "📡 Domain Access (all via NGINX Ingress):"
 	@echo "  ArgoCD: http://argocd.apps.k8s.labjp.xyz (admin/admin123)"
@@ -197,7 +197,7 @@ ingress: ## Open Ingress services in browser
 		echo "Opening Kubernetes Dashboard..."; \
 		open "https://dashboard.apps.k8s.labjp.xyz" 2>/dev/null || xdg-open "https://dashboard.apps.k8s.labjp.xyz" 2>/dev/null || echo "Open manually: https://dashboard.apps.k8s.labjp.xyz"; \
 	else \
-		echo "❌ MetalLB LoadBalancer (NGINX Ingress) not reachable"; \
+		echo "❌ External LoadBalancer (pfSense HAProxy) not reachable"; \
 	fi
 lint-helm: ## Lint all Helm charts
 	@echo "🧹 Linting Helm charts..."

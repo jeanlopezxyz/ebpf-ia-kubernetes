@@ -19,7 +19,7 @@ This guide covers the complete deployment process for the eBPF + AI GitOps syste
 │                Infrastructure Components                     │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  Minikube → Cilium → MetalLB → ArgoCD → Applications        │
+│  Kubernetes → Cilium → NGINX Ingress → ArgoCD → Applications │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -93,7 +93,7 @@ The bootstrap process installs:
 
 1. **Minikube Cluster** (3 nodes, 8GB RAM, 4 CPUs)
 2. **Cilium CNI** with eBPF features
-3. **MetalLB** LoadBalancer
+3. **NGINX Ingress** Controller
 4. **ArgoCD** GitOps controller
 
 ```bash
@@ -187,13 +187,13 @@ kubectl describe nodes
 kubectl get events -n ebpf-security --sort-by='.lastTimestamp'
 ```
 
-#### MetalLB LoadBalancer Pending
+#### NGINX Ingress Issues
 ```bash
-# Check MetalLB logs
-kubectl logs -n metallb-system -l app=metallb
+# Check NGINX Ingress logs
+kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx
 
-# Verify IP pool
-kubectl get ipaddresspool -n metallb-system
+# Verify ingress resources
+kubectl get ingress -A
 ```
 
 ### Resource Monitoring
