@@ -1,0 +1,45 @@
+# Additional RBAC for webhook automation in ebpf-security namespace
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-triggers-example-sa
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: serviceaccount
+    app.kubernetes.io/part-of: ebpf-ai-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: triggers-eventlistener-binding-ebpf
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: ebpf-ai-system
+subjects:
+- kind: ServiceAccount
+  name: tekton-triggers-example-sa
+  namespace: ebpf-security
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-roles
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: triggers-eventlistener-clusterbinding-ebpf-gitops
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: ebpf-ai-system
+subjects:
+- kind: ServiceAccount
+  name: tekton-triggers-example-sa
+  namespace: ebpf-security
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tekton-triggers-eventlistener-clusterroles

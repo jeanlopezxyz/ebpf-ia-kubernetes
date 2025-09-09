@@ -10,9 +10,11 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://raw.githubusercontent.com/tektoncd/triggers/v0.25.0/config/release.yaml
-    targetRevision: HEAD
-    path: .
+    repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
+    path: gitops/tekton-triggers-base
+    targetRevision: main
+    directory:
+      include: "*.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: tekton-pipelines
