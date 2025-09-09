@@ -139,6 +139,8 @@ spec:
       version: 1.0.0
       description: Network monitoring metrics collected via eBPF
     servers:
+      - url: http://ebpf-monitor.apps.k8s.labjp.xyz
+        description: External access via pfSense HAProxy
       - url: http://ebpf-monitor.ebpf-security:8800
         description: Internal cluster access
     paths:

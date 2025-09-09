@@ -6,13 +6,13 @@ backstage:
   backstage:
     appConfig:
       app:
-        title: "eBPF + AI Developer Portal"
-        baseUrl: http://backstage.apps.k8s.labjp.xyz
+        title: "eBPF + AI Security Portal"
+        baseUrl: https://backstage.apps.k8s.labjp.xyz
         
       backend:
-        baseUrl: http://backstage.apps.k8s.labjp.xyz
+        baseUrl: https://backstage.apps.k8s.labjp.xyz
         cors:
-          origin: http://backstage.apps.k8s.labjp.xyz
+          origin: https://backstage.apps.k8s.labjp.xyz
         database:
           client: better-sqlite3
           connection: ':memory:'
