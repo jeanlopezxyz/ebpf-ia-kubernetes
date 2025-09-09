@@ -1,4 +1,4 @@
-module github.com/jeanlopezxyz/ebpf-ia-gitops/applications/ebpf-monitor
+module github.com/jeanlopezxyz/ebpf-ia-kubernetes/applications/ebpf-monitor
 
 go 1.21
 

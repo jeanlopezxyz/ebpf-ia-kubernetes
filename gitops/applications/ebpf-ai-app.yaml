@@ -12,7 +12,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/jeanlopezxyz/ebpf-ia-gitops.git
+    repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
     targetRevision: main
     path: helm/charts/ebpf-ai
     helm:

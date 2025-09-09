@@ -3,7 +3,7 @@
 Este artículo documenta, paso a paso, cómo convertimos manifiestos sueltos en charts Helm, unificamos convenciones (labels, namespaces, metadatos), añadimos linters y reforzamos la DX del repositorio. Todo sobre el stack eBPF + IA con Argo CD y Tekton, ejecutándose en Minikube.
 
 ## Contexto
-- Repo: `ebpf-ia-gitops`
+- Repo: `ebpf-ia-kubernetes`
 - Objetivo: convertir y estandarizar despliegues (Tekton Dashboard, ebpf-ai, tekton-ci, registry) y mejorar la mantenibilidad (linters, esquemas, Make targets).
 - Orquestación: Argo CD (App-of-Apps), Tekton CI, Ingress NGINX, Cilium, Minikube.
 

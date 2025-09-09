@@ -13,7 +13,7 @@ keywords:
   - observability
   - ebpf
   - ai
-home: https://github.com/jeanlopezxyz/ebpf-ia-gitops
+home: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes
 sources:
   - https://github.com/grafana/helm-charts
 maintainers:

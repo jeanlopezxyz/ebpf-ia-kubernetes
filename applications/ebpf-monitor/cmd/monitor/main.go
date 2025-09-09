@@ -21,8 +21,8 @@ import (
 	"github.com/cilium/ebpf/rlimit"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/jeanlopezxyz/ebpf-ia-gitops/applications/ebpf-monitor/pkg/config"
-	"github.com/jeanlopezxyz/ebpf-ia-gitops/applications/ebpf-monitor/pkg/metrics"
+	"github.com/jeanlopezxyz/ebpf-ia-kubernetes/applications/ebpf-monitor/pkg/config"
+	"github.com/jeanlopezxyz/ebpf-ia-kubernetes/applications/ebpf-monitor/pkg/metrics"
 )
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -cflags "-O2 -g -Wall -Werror" network ../../bpf/network_monitor.c

@@ -12,10 +12,10 @@ keywords:
   - ci-cd
   - pipelines
   - kubernetes
-home: https://github.com/jeanlopezxyz/ebpf-ia-gitops
+home: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes
 sources:
   - https://github.com/tektoncd/dashboard
-  - https://github.com/jeanlopezxyz/ebpf-ia-gitops
+  - https://github.com/jeanlopezxyz/ebpf-ia-kubernetes
 maintainers:
   - name: eBPF AI Team
     email: team@ebpf-ai.local

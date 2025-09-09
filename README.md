@@ -58,7 +58,7 @@ ebpf-ia-kubernetes/
 ```bash
 # Clone and enter directory
 git clone <this-repo>
-cd ebpf-ia-gitops
+cd ebpf-ia-kubernetes
 
 # Bootstrap complete stack
 ansible-playbook ansible/bootstrap.yml

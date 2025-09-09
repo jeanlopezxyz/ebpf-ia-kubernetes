@@ -25,7 +25,7 @@ spec:
               storage: 1Gi
   params:
     - name: git-url
-      value: https://github.com/jeanlopezxyz/ebpf-ia-gitops.git
+      value: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
     - name: git-revision
       value: main
     - name: charts-path

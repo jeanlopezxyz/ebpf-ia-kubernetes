@@ -15,7 +15,7 @@ spec:
   params:
     - name: git-url
       description: Git repository URL
-      default: https://github.com/jeanlopezxyz/ebpf-ia-gitops.git
+      default: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
     - name: git-revision
       description: Git revision to build
       default: main
