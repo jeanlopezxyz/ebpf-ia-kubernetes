@@ -81,7 +81,7 @@
   debug:
     msg:
       - "🚀 ArgoCD GitOps installed successfully!"
-      - "🌐 Access URL: Use port-forward (LoadBalancer pending in Minikube)"
+      - "🌐 Access URL: https://argocd.apps.k8s.labjp.xyz (External LB)"
       - "👤 Username: admin"
       - "🔐 Password: admin123"
       - "💡 Port forward: kubectl port-forward svc/argocd-server -n argocd 8080:80"
