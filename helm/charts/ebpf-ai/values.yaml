@@ -24,7 +24,7 @@ mlDetector:
   name: ml-detector
   replicaCount: 1  # Images are now available
   image:
-    repository: 192.168.67.2:5000/ml-detector
+    repository: quay.io/jealopez/ml-detector
     tag: "latest"
     pullPolicy: Always
     # Ejemplo de imagen con GPU (cuando habilites GPU):
@@ -101,7 +101,7 @@ ebpfMonitor:
   name: ebpf-monitor
   replicaCount: 1  # Images are now available
   image:
-    repository: 192.168.67.2:5000/ebpf-monitor
+    repository: quay.io/jealopez/ebpf-monitor
     tag: "latest"
     pullPolicy: Always
     
