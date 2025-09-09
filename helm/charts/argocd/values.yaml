@@ -7,9 +7,13 @@ argo-cd:
     cm:
       admin.enabled: "true"
       url: "http://argocd.apps.k8s.labjp.xyz" # External URL
-    secret:
-      argocdServerAdminPassword: "$2y$05$CwRbzWIwJRy0vAeVBjFhvOhaEceMwEl/2VQpJUqMotipPr00u1yiW"
-      argocdServerAdminPasswordMtime: "2025-08-24T00:00:00Z"
+    # secret:
+    #   argocdServerAdminPassword: "REMOVED - using sealed secret"
+    #   argocdServerAdminPasswordMtime: "2025-08-24T00:00:00Z"
+    
+    # Use sealed secret instead
+    secretNames:
+      argocdServerAdminPassword: "argocd-admin-secret"
 
   server:
     insecure: true

@@ -7,7 +7,11 @@ grafana:
   enabled: true
   
   # Basic configuration  
-  adminPassword: "admin123"  # Plain text password
+  # adminPassword: "admin123"  # REMOVED - now using sealed secret
+  admin:
+    existingSecret: "grafana-admin-secret"
+    userKey: admin-user
+    passwordKey: admin-password
   
   
   # Service configuration
@@ -74,7 +78,7 @@ grafana:
       serve_from_sub_path: false
     security:
       admin_user: admin
-      admin_password: admin123
+      # admin_password removed - using sealed secret
     users:
       auto_assign_org_role: Admin
     auth:
