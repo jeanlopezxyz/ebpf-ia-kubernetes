@@ -1,0 +1,43 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: github-webhook-ingress
+  namespace: ebpf-security
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    # GitHub webhook specific annotations
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location /webhook {
+        proxy_pass http://el-github-webhook-listener.ebpf-security.svc.cluster.local:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+      }
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: "*.apps.k8s.labjp.xyz"  # Wildcard domain
+    http:
+      paths:
+      - path: /webhook
+        pathType: Prefix
+        backend:
+          service:
+            name: el-github-webhook-listener
+            port:
+              number: 8080
+  - host: "webhook.apps.k8s.labjp.xyz"  # Specific subdomain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: el-github-webhook-listener
+            port:
+              number: 8080
