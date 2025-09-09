@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: backstage-docs
-  namespace: {{ .Release.Namespace }}
-data:
-{{ (.Files.Glob "backstage-content/docs/**/*").AsConfig | indent 2 }}
