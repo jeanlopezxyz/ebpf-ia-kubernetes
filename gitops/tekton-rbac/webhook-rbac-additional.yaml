@@ -1,14 +1,6 @@
 # Additional RBAC for webhook automation in ebpf-security namespace
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: tekton-triggers-example-sa
-  namespace: ebpf-security
-  labels:
-    app.kubernetes.io/name: tekton-webhook
-    app.kubernetes.io/component: serviceaccount
-    app.kubernetes.io/part-of: ebpf-ai-system
----
+# ServiceAccount is managed by webhook-automation app to avoid conflicts
+#
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:

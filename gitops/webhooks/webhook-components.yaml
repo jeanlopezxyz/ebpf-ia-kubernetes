@@ -1,0 +1,164 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-webhook-listener
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: eventlistener
+    app.kubernetes.io/part-of: ebpf-ai-system
+spec:
+  serviceAccountName: tekton-triggers-example-sa
+  resources:
+    kubernetesResource:
+      spec:
+        template:
+          spec:
+            serviceAccountName: tekton-triggers-example-sa
+            containers:
+            - resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"
+  triggers:
+    - name: ml-detector-trigger
+      bindings:
+        - ref: github-push-binding
+      template:
+        ref: ml-detector-trigger-template
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: github-push-binding
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: trigger-binding
+    app.kubernetes.io/part-of: ebpf-ai-system
+spec:
+  params:
+    - name: git-revision
+      value: $(body.head_commit.id)
+    - name: git-repository-url
+      value: $(body.repository.clone_url)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: ml-detector-trigger-template
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: trigger-template
+    app.kubernetes.io/part-of: ebpf-ai-system
+spec:
+  params:
+    - name: git-revision
+      default: main
+    - name: git-repository-url
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1
+      kind: PipelineRun
+      metadata:
+        generateName: webhook-ml-detector-
+        namespace: ebpf-security
+        labels:
+          app: ml-detector
+          trigger: github-webhook
+      spec:
+        pipelineRef:
+          name: application-build-ci
+        taskRunTemplate:
+          serviceAccountName: tekton-builder-sa
+        params:
+          - name: git-url
+            value: $(tt.params.git-repository-url)
+          - name: git-revision
+            value: $(tt.params.git-revision)
+          - name: image-registry
+            value: quay.io/jealopez
+          - name: image-name
+            value: ml-detector
+          - name: dockerfile-path
+            value: applications/ml-detector/Dockerfile
+          - name: context-path
+            value: applications/ml-detector
+          - name: argo-app-name
+            value: ebpf-ai
+        workspaces:
+          - name: shared-data
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 1Gi
+                storageClassName: local-path
+          - name: dockerconfig
+            secret:
+              secretName: quay-io-secret
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-triggers-example-sa
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: serviceaccount
+    app.kubernetes.io/part-of: ebpf-ai-system
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: github-webhook-ingress
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/name: tekton-webhook
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: ebpf-ai-system
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: webhook.apps.k8s.labjp.xyz
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: el-github-webhook-listener
+            port:
+              number: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: el-github-webhook-listener
+  namespace: ebpf-security
+  labels:
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: github-webhook-listener
+spec:
+  type: NodePort
+  ports:
+    - name: http-listener
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+      nodePort: 30082
+  selector:
+    app.kubernetes.io/managed-by: EventListener
+    app.kubernetes.io/part-of: Triggers
+    eventlistener: github-webhook-listener
