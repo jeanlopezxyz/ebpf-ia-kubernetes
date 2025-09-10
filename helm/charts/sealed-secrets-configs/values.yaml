@@ -1,0 +1,51 @@
+# Sealed Secrets Configuration Values
+
+# Global settings
+global:
+  namespace: ebpf-security
+
+# Sealed Secrets to deploy
+sealedSecrets:
+  # Grafana admin credentials
+  grafana:
+    enabled: true
+    namespace: grafana
+    secretName: grafana-admin-secret
+    
+  # ArgoCD admin credentials  
+  argocd:
+    enabled: true
+    namespace: argocd
+    secretName: argocd-admin-secret
+    
+  # Quay.io registry credentials
+  quay:
+    enabled: true
+    namespace: ebpf-security
+    secretName: quay-io-secret
+    
+  # GitHub webhook secret
+  webhook:
+    enabled: true
+    namespace: ebpf-security
+    secretName: github-webhook-secret
+
+# ServiceAccount configurations
+serviceAccounts:
+  # Tekton builder with registry credentials
+  tektonBuilder:
+    enabled: true
+    namespace: ebpf-security
+    name: tekton-builder-sa
+    secrets:
+      - quay-io-secret
+    imagePullSecrets:
+      - quay-io-secret
+
+# Generated passwords (for documentation)
+# These are the actual values encrypted in the sealed secrets
+passwords:
+  grafana: "MIVl6ww1DkKZidZyuHHXS5c4N"
+  argocd: "oSsMYDYPSzcXXexpW2GdSrM2g"  
+  webhook: "2N1ydZkoZ1iuZPHn5mnI0A8bK"
+  quayUsername: "jealopez+ebpf_ia"

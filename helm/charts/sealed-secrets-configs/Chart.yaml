@@ -1,0 +1,22 @@
+apiVersion: v2
+name: sealed-secrets-configs
+description: Encrypted credential configurations for eBPF AI platform
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+keywords:
+  - sealed-secrets
+  - security
+  - credentials
+  - encryption
+  - ebpf
+  - ai
+
+maintainers:
+  - name: eBPF AI Team
+    email: ebpf-ai@example.com
+
+annotations:
+  artifacthub.io/keywords: sealed-secrets,security,credentials,encryption
+  artifacthub.io/category: security
