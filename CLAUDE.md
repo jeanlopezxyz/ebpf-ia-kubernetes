@@ -36,6 +36,14 @@ make sync
 # Webhook automation for applications/ changes:
 # Git Push → GitHub Webhook → Tekton → Quay.io → ArgoCD → Deploy
 
+# Development environment with hot-reload
+make dev                # Setup development environment with auto-sync
+
+# Code quality checks (before committing)
+make lint-code          # Lint Python (ruff, black) and Go (golangci-lint)
+make lint-helm          # Lint all Helm charts
+make test               # Run basic functionality tests
+
 # Access services
 kubectl port-forward svc/argocd-server -n argocd 8080:80
 kubectl port-forward svc/kube-prometheus-stack-grafana -n monitoring 3000:80
@@ -52,6 +60,11 @@ kubectl get nodes
 kubectl get pods -A
 kubectl get applications -n argocd
 
+# Application logs
+make logs               # View ML Detector and eBPF Monitor logs
+kubectl logs -n ebpf-security -l app=ml-detector --tail=20
+kubectl logs -n ebpf-security -l app=ebpf-monitor --tail=20
+
 # Pipeline debugging
 kubectl describe pipelinerun <name> -n ebpf-security
 kubectl logs <pod-name> -n ebpf-security
@@ -59,6 +72,11 @@ kubectl logs <pod-name> -n ebpf-security
 # ArgoCD debugging  
 kubectl describe application ebpf-ai -n argocd
 kubectl logs -n argocd -l app.kubernetes.io/name=argocd-application-controller
+
+# Port forwarding management
+make port-forward       # Setup all service port forwards
+make port-stop          # Stop all port forwards
+make port-status        # Show active port forwards
 ```
 
 ## Configuration Architecture
@@ -98,12 +116,18 @@ Python Flask application providing AI-based threat detection:
 - **Endpoints**: `/health`, `/metrics`, `/detect`
 - **Dependencies**: Redis for caching, Prometheus for metrics
 - **Configuration**: Via Helm values and environment variables
+- **Models**: Statistical, spatial, temporal anomaly detection models
+- **Rules**: Network, process monitoring, user behavior rules
+- **Development**: `cd applications/ml-detector && python app.py`
+- **Testing**: `cd applications/ml-detector && python -m pytest tests/`
 
 ### eBPF Monitor (`applications/ebpf-monitor/`)  
 Go application for eBPF-based network monitoring:
 - **Endpoints**: `/health`, `/metrics`
 - **Function**: Collects network metrics, integrates with ML Detector
 - **Build**: Standard Go modules with CGO enabled for eBPF
+- **Components**: Network monitor (eBPF), QoS calculator, Prometheus metrics
+- **Development**: `cd applications/ebpf-monitor && go run cmd/monitor/main.go`
 
 ## CI/CD Pipeline Architecture
 
