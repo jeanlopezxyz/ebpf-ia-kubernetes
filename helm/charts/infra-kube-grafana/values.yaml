@@ -1,8 +1,5 @@
 # Grafana Configuration for eBPF-AI Platform
 
-# Base domain for ingress hosts (e.g., apps.k8s.labjp.xyz)
-domainBase: "apps.k8s.labjp.xyz"
-
 grafana:
   enabled: true
   
@@ -38,31 +35,21 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://localhost:9090
+          url: http://infra-kube-prometheus-server.prometheus.svc.cluster.local:80
           access: proxy
           isDefault: true
           jsonData:
             timeInterval: "15s"
+            queryTimeout: "60s"
+            httpMethod: GET
             
-  # Dashboard providers
-  dashboardProviders:
-    dashboardproviders.yaml:
-      apiVersion: 1
-      providers:
-      - name: 'ebpf-ai-dashboards'
-        orgId: 1
-        folder: 'eBPF-AI'
-        type: file
-        disableDeletion: false
-        updateIntervalSeconds: 10
-        allowUiUpdates: true
-        options:
-          path: /var/lib/grafana/dashboards/ebpf-ai
+  # Dashboard providers (not needed with sidecar)
+  dashboardProviders: {}
           
-  # Dashboards configuration - use sidecar ONLY
+  # Dashboards - will be loaded by sidecar from ConfigMaps
   dashboards: {}
         
-  # Sidecar enabled for ConfigMap detection
+  # Sidecar enabled for automatic ConfigMap detection
   sidecar:
     dashboards:
       enabled: true
@@ -70,6 +57,11 @@ grafana:
       labelValue: "1"
       searchNamespace: ALL
       folder: /tmp/dashboards
+      provider:
+        foldersFromFilesStructure: true
+        name: eBPF-AI-Dashboards
+        orgid: 1
+        folder: 'eBPF-AI Security'
       
   # Grafana configuration
   grafana.ini:
@@ -111,3 +103,20 @@ grafana:
     requests:
       cpu: 250m
       memory: 256Mi
+
+# Custom Ingress configuration (outside of grafana config)
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - host: grafana.apps.k8s.labjp.xyz
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: infra-kube-grafana
+            port: 3000
+  tls: []
