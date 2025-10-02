@@ -1,26 +1,50 @@
+# Kubernetes Dashboard Configuration for eBPF-AI Platform
+
 kubernetes-dashboard:
-  protocolHttp: false
-  
+  # App configuration
+  app:
+    # Security settings for development environment
+    insecureLogin: true
+    enableSkipLogin: true
+    mode: dashboard
+    
+  # Service configuration
   service:
     type: ClusterIP
-  
-  extraArgs:
-    - --enable-insecure-login
-    - --enable-skip-login
-  
+    
+  # Settings
   settings:
     clusterName: "ebpf-kvm-cluster"
     itemsPerPage: 20
-  
-  metrics-server:
+    
+  # Enable metrics server for resource monitoring
+  metricsScraper:
     enabled: true
+    
+  # Security context (non-root for security)
+  securityContext:
+    runAsUser: 1001
+    runAsGroup: 2001
+    runAsNonRoot: true
+    
+  # Optional: Custom certificate configuration for HTTPS
+  # certificateSkipValidation: true
 
-  ingress:
-    enabled: true
-    className: nginx
-    host: dashboard.apps.k8s.labjp.xyz
-    path: /
-    annotations:
-      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-      nginx.ingress.kubernetes.io/ssl-redirect: "false"
-      nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+# Custom Ingress configuration (since official chart might not have full ingress support)
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - host: dashboard.apps.k8s.labjp.xyz
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: kubernetes-dashboard-kong-proxy
+            port: 443
