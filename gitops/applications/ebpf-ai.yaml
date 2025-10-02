@@ -1,18 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: quay-secrets
+  name: ebpf-ai
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: ebpf-ai
+    app.kubernetes.io/part-of: ebpf-ai-system
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
-    path: gitops/secrets
     targetRevision: main
-    directory:
-      include: "quay-io-secret.yaml"
+    path: helm/charts/app-kube-ebpf-ai
   destination:
     server: https://kubernetes.default.svc
     namespace: ebpf-security
@@ -20,12 +21,12 @@ spec:
     automated:
       prune: true
       selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
     retry:
       limit: 5
       backoff:
         duration: 5s
         factor: 2
         maxDuration: 3m
-    syncOptions:
-      - CreateNamespace=true
-      - RespectIgnoreDifferences=true

@@ -1,25 +1,25 @@
-# GitOps Configuration Structure
+# GitOps Configuration - eBPF + AI Security Platform
 
-Organized GitOps configuration for the eBPF AI platform.
+Clean and organized GitOps configuration using ArgoCD App-of-Apps pattern.
 
 ## 📁 Directory Structure
 
 ```
 gitops/
-├── applications/           # ArgoCD Application definitions
-│   ├── app-of-apps.yaml           # Root App-of-Apps pattern
-│   ├── sealed-secrets.yaml        # Sealed Secrets controller (Helm)
-│   ├── sealed-secrets-configs.yaml # Credentials (Helm chart)
-│   ├── tekton-automation-complete.yaml # Complete Tekton automation
-│   ├── ebpf-ai-app.yaml          # Main application
-│   └── [other apps...]
-│
-├── tekton-complete/        # Unified Tekton Triggers + Webhooks
-│   ├── tekton-triggers-install.yaml # PreSync job for installation
-│   ├── webhook-automation.yaml      # EventListener + components
-│   └── README.md                    # Documentation
-│
-└── [deprecated directories removed]
+├── app-of-apps.yaml           # Root ArgoCD application
+├── applications/              # Clean application definitions
+│   ├── ebpf-ai.yaml          # Core: ML Detector + eBPF Monitor  
+│   ├── sealed-secrets.yaml   # Infrastructure: Sealed Secrets controller
+│   ├── sealed-secrets-configs.yaml # Infrastructure: Encrypted secrets
+│   ├── grafana.yaml          # Monitoring: Grafana dashboards
+│   ├── prometheus.yaml       # Monitoring: Prometheus metrics
+│   ├── registry.yaml         # Infrastructure: Container registry
+│   ├── kubernetes-dashboard.yaml # Infrastructure: K8s dashboard
+│   └── tekton.yaml           # CI/CD: Tekton pipelines
+└── sealed-secrets/           # Encrypted secrets
+    ├── argocd-admin-secret-sealed.yaml
+    ├── grafana-admin-secret-sealed.yaml
+    └── README.md
 ```
 
 ## 🎯 Design Principles

@@ -13,7 +13,7 @@ spec:
   source:
     repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
     targetRevision: main
-    path: helm/charts/kubernetes-dashboard
+    path: helm/charts/infra-kube-dashboard
   destination:
     server: https://kubernetes.default.svc
     namespace: kubernetes-dashboard
@@ -23,11 +23,3 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - PrunePropagationPolicy=foreground
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-  revisionHistoryLimit: 10

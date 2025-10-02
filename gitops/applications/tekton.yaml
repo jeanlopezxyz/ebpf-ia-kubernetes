@@ -1,12 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tekton-dashboard
+  name: tekton
   namespace: argocd
   labels:
-    app.kubernetes.io/name: tekton-dashboard
+    app.kubernetes.io/name: tekton
     app.kubernetes.io/part-of: ebpf-ai-system
-    app.kubernetes.io/component: argocd-app
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -14,10 +13,7 @@ spec:
   source:
     repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
     targetRevision: main
-    path: helm/charts/tekton-dashboard
-    helm:
-      valueFiles:
-        - values.yaml
+    path: helm/charts/infra-kube-tekton
   destination:
     server: https://kubernetes.default.svc
     namespace: tekton
@@ -25,15 +21,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
-      allowEmpty: false
     syncOptions:
       - CreateNamespace=true
-      - PrunePropagationPolicy=foreground
-      - PruneLast=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-  revisionHistoryLimit: 10

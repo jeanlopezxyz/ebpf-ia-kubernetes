@@ -1,33 +1,25 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: webhook-automation
+  name: prometheus
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: ebpf-ai-system
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"  # Install after base components
 spec:
   project: default
   source:
     repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
-    path: gitops/webhooks
     targetRevision: main
-    directory:
-      include: "*.yaml"
+    path: helm/charts/infra-kube-prometheus
   destination:
     server: https://kubernetes.default.svc
-    namespace: ebpf-security
+    namespace: prometheus
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
     syncOptions:
       - CreateNamespace=true
-      - RespectIgnoreDifferences=true

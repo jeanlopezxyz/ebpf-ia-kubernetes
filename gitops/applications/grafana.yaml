@@ -1,34 +1,28 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tekton-automation-complete
+  name: grafana
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: ebpf-ai-system
   finalizers:
     - resources-finalizer.argocd.argoproj.io
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
-    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   project: default
   source:
     repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
-    path: gitops/tekton-complete
     targetRevision: main
-    directory:
-      include: "*.yaml"
+    path: helm/charts/infra-kube-grafana
   destination:
     server: https://kubernetes.default.svc
+    namespace: grafana
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    retry:
-      limit: 5
-      backoff:
-        duration: 10s
-        factor: 2
-        maxDuration: 5m
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
-      - RespectIgnoreDifferences=true
+  info:
+    - name: Dependencies
+      value: Requires sealed-secrets-configs
