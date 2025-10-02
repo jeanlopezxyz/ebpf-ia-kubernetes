@@ -34,9 +34,9 @@
       include_role:
         name: storage
 
-    - name: Install ArgoCD GitOps
-      include_role:
-        name: argocd
+    # - name: Install ArgoCD GitOps
+    #   include_role:
+    #     name: argocd
 
     - name: Display access information
       include_role:
