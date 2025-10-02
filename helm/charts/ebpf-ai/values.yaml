@@ -38,12 +38,12 @@ mlDetector:
     
   resources:
     limits:
-      cpu: 1000m
-      memory: 2Gi
-      # 'nvidia.com/gpu': 1  # ← Descomenta para solicitar 1 GPU NVIDIA
-    requests:
       cpu: 500m
       memory: 1Gi
+      # 'nvidia.com/gpu': 1  # ← Descomenta para solicitar 1 GPU NVIDIA
+    requests:
+      cpu: 200m
+      memory: 512Mi
       
   # Persistent storage for ML models
   persistence:
@@ -112,11 +112,11 @@ ebpfMonitor:
     
   resources:
     limits:
-      cpu: 500m
-      memory: 1Gi
-    requests:
-      cpu: 250m
+      cpu: 300m
       memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
       
   env:
     - name: ML_DETECTOR_URL
@@ -153,7 +153,7 @@ ebpfMonitor:
 autoscaling:
   enabled: true
   minReplicas: 1
-  maxReplicas: 5
+  maxReplicas: 3
   targetCPUUtilizationPercentage: 70
   targetMemoryUtilizationPercentage: 80
 

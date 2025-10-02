@@ -38,7 +38,6 @@
       - ""
       - "📊 APPLICATION ACCESS (External URLs):"
       - "   Grafana Dashboard: https://grafana.apps.k8s.labjp.xyz"
-      - "   Backstage Portal: https://backstage.apps.k8s.labjp.xyz"
       - "   Kubernetes Dashboard: https://dashboard.apps.k8s.labjp.xyz"
       - "   Tekton Dashboard: https://tekton-dashboard.apps.k8s.labjp.xyz"
       - "   Registry: https://registry.apps.k8s.labjp.xyz"

@@ -31,9 +31,9 @@ kubeadm:
   pod_network_cidr: "10.244.0.0/16" # Pod network (65K IPs)
   service_cidr: "10.96.0.0/12" # Service network (1M IPs)
   vm:
-    memory: "12288" # 12GB RAM
-    cpus: 4
-    disk_size: "60g"
+    memory: "16384" # 16GB RAM
+    cpus: 8
+    disk_size: "300g"
     network_bridge: "br0" # Bridge network
     static_ip: "10.0.10.100" # Fixed IP for VM/API
     gateway: "10.0.10.1" # Bridge gateway
