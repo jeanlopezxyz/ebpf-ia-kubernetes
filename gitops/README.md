@@ -7,19 +7,14 @@ Clean and organized GitOps configuration using ArgoCD App-of-Apps pattern.
 ```
 gitops/
 ├── app-of-apps.yaml           # Root ArgoCD application
-├── applications/              # Clean application definitions
-│   ├── ebpf-ai.yaml          # Core: ML Detector + eBPF Monitor  
-│   ├── sealed-secrets.yaml   # Infrastructure: Sealed Secrets controller
-│   ├── sealed-secrets-configs.yaml # Infrastructure: Encrypted secrets
-│   ├── grafana.yaml          # Monitoring: Grafana dashboards
-│   ├── prometheus.yaml       # Monitoring: Prometheus metrics
-│   ├── registry.yaml         # Infrastructure: Container registry
-│   ├── kubernetes-dashboard.yaml # Infrastructure: K8s dashboard
-│   └── tekton.yaml           # CI/CD: Tekton pipelines
-└── sealed-secrets/           # Encrypted secrets
-    ├── argocd-admin-secret-sealed.yaml
-    ├── grafana-admin-secret-sealed.yaml
-    └── README.md
+└── applications/              # Clean application definitions
+    ├── ebpf-ai.yaml          # Core: ML Detector + eBPF Monitor  
+    ├── sealed-secrets.yaml   # Infrastructure: Sealed Secrets controller
+    ├── grafana.yaml          # Monitoring: Grafana dashboards
+    ├── prometheus.yaml       # Monitoring: Prometheus metrics
+    ├── registry.yaml         # Infrastructure: Container registry
+    ├── kubernetes-dashboard.yaml # Infrastructure: K8s dashboard
+    └── tekton.yaml           # CI/CD: Tekton pipelines
 ```
 
 ## 🎯 Design Principles
