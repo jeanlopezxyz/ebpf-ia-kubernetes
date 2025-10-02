@@ -1,0 +1,29 @@
+apiVersion: v2
+name: infra-kube-tekton
+description: Complete Tekton CI/CD platform with dashboard, pipelines and triggers
+type: application
+version: 0.1.0
+appVersion: "v0.62.0"
+icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/tekton/icon/color/tekton-icon-color.png
+kubeVersion: ">=1.26.0-0"
+keywords:
+  - tekton
+  - ci-cd
+  - pipelines
+  - dashboard
+  - triggers
+  - automation
+  - ebpf
+  - ai
+home: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes
+sources:
+  - https://github.com/tektoncd/dashboard
+  - https://github.com/tektoncd/pipeline
+  - https://github.com/tektoncd/triggers
+  - https://github.com/jeanlopezxyz/ebpf-ia-kubernetes
+maintainers:
+  - name: eBPF AI Team
+    email: team@ebpf-ai.local
+annotations:
+  artifacthub.io/category: ci-cd
+  artifacthub.io/keywords: tekton,ci-cd,pipelines,dashboard,triggers,automation

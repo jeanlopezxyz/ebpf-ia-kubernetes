@@ -1,0 +1,61 @@
+{{- if .Values.dashboard.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tekton.dashboard.fullname" . }}
+  namespace: {{ include "tekton.namespace" . }}
+  labels:
+    {{- include "tekton.dashboard.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.dashboard.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "tekton.dashboard.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tekton.dashboard.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "tekton.dashboard.serviceAccountName" . }}
+      containers:
+        - name: tekton-dashboard
+          image: "{{ .Values.dashboard.image.repository }}:{{ .Values.dashboard.image.tag }}"
+          imagePullPolicy: {{ .Values.dashboard.image.pullPolicy }}
+          args:
+            - --port=9097
+            - --logout-url={{ .Values.dashboard.config.logoutUrl }}
+            - --pipelines-namespace={{ .Values.dashboard.config.pipelinesNamespace | default (include "tekton.namespace" .) }}
+            - --triggers-namespace={{ .Values.dashboard.config.triggersNamespace | default (include "tekton.namespace" .) }}
+            - --read-only={{ .Values.dashboard.config.readOnly }}
+            - --log-level={{ .Values.dashboard.config.logLevel }}
+            - --log-format={{ .Values.dashboard.config.logFormat }}
+            {{- if .Values.dashboard.config.namespaces }}
+            - --namespaces={{ .Values.dashboard.config.namespaces }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 9097
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: http
+          resources:
+            {{- toYaml .Values.dashboard.resources | nindent 12 }}
+      {{- with .Values.dashboard.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.dashboard.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.dashboard.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

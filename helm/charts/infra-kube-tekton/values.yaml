@@ -1,0 +1,35 @@
+# Tekton Complete Platform Configuration
+global:
+  namespace: tekton
+
+# Enable/disable components
+dashboard:
+  enabled: true
+  
+pipelines:
+  enabled: true
+  
+triggers:
+  enabled: true
+
+# External configurations that will be used by upstream installers
+tektonConfig:
+  # These will point to official Tekton releases
+  pipelinesVersion: "v0.62.0"
+  dashboardVersion: "v0.60.0"
+  triggersVersion: "v0.28.1"
+  
+  # Custom configurations for eBPF-AI project
+  registry:
+    url: registry.apps.k8s.labjp.xyz
+    internal_url: registry.registry.svc.cluster.local:5000
+  
+  git:
+    repository: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
+    branch: main
+  
+  webhook:
+    host: tekton-webhook.apps.k8s.labjp.xyz
+    
+  dashboard:
+    host: tekton-dashboard.apps.k8s.labjp.xyz

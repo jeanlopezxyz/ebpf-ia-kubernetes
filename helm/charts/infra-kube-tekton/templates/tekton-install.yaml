@@ -1,0 +1,55 @@
+{{- if .Values.pipelines.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "tekton.namespace" . }}
+---
+# This will install Tekton Pipelines using official manifests
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tekton-pipelines-install
+  namespace: {{ include "tekton.namespace" . }}
+  labels:
+    {{- include "tekton.labels" . | nindent 4 }}
+    app.kubernetes.io/component: installer
+spec:
+  template:
+    spec:
+      serviceAccountName: tekton-installer
+      restartPolicy: OnFailure
+      containers:
+      - name: installer
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/previous/{{ .Values.tektonConfig.pipelinesVersion }}/release.yaml
+          {{- if .Values.dashboard.enabled }}
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/previous/{{ .Values.tektonConfig.dashboardVersion }}/release.yaml
+          {{- end }}
+          {{- if .Values.triggers.enabled }}
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/previous/{{ .Values.tektonConfig.triggersVersion }}/release.yaml
+          {{- end }}
+{{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-installer
+  namespace: {{ include "tekton.namespace" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tekton-installer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: tekton-installer
+  namespace: {{ include "tekton.namespace" . }}
