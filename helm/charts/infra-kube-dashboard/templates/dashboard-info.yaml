@@ -1,0 +1,45 @@
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-access-info
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: kubernetes-dashboard
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: info
+data:
+  README.md: |
+    # Kubernetes Dashboard Access
+    
+    ## Dashboard URL
+    https://dashboard.{{ .Values.global.domain }}
+    
+    ## Access Token
+    To get the access token, run:
+    
+    ```bash
+    kubectl get secret {{ .Values.serviceAccount.name }}-token -n {{ .Release.Namespace }} -o jsonpath='{.data.token}' | base64 -d
+    ```
+    
+    Or create a new token:
+    
+    ```bash
+    kubectl create token {{ .Values.serviceAccount.name }} -n {{ .Release.Namespace }} --duration={{ .Values.serviceAccount.tokenDuration | default "8760h" }}
+    ```
+    
+    ## ServiceAccount Details
+    - **Name**: {{ .Values.serviceAccount.name }}
+    - **Namespace**: {{ .Release.Namespace }}
+    - **Permissions**: {{ .Values.serviceAccount.clusterRole }}
+    - **Token Duration**: {{ .Values.serviceAccount.tokenDuration | default "cluster default" }}
+    
+    ## Login Steps
+    1. Access the dashboard URL above
+    2. Select "Token" authentication method
+    3. Paste the token from the commands above
+    4. Click "Sign In"
+    
+    ## Alternative Access (Skip Login)
+    The dashboard is configured with `enableSkipLogin: true`, so you can also click "Skip" on the login page.
+{{- end }}

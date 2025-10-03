@@ -26,6 +26,10 @@
       wait_for:
         timeout: 60
 
+    - name: Install Gateway API CRDs
+      include_role:
+        name: gateway-api-simple
+
     - name: Install NGINX Ingress Controller
       include_role:
         name: nginx-ingress

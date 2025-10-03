@@ -1,4 +1,8 @@
-# Kubernetes Dashboard Configuration for eBPF-AI Platform
+# Kubernetes Dashboard Configuration - Generic Chart
+
+# Global configuration  
+global:
+  domain: "example.com"  # Change to your domain (e.g., apps.k8s.mydomain.com)
 
 kubernetes-dashboard:
   # App configuration
@@ -30,9 +34,43 @@ kubernetes-dashboard:
   # Optional: Custom certificate configuration for HTTPS
   # certificateSkipValidation: true
 
-# Custom Ingress configuration (since official chart might not have full ingress support)
+# ServiceAccount configuration for dashboard access
+serviceAccount:
+  # Create a ServiceAccount with admin permissions
+  create: true
+  name: "dashboard-admin"
+  # Cluster role to bind (cluster-admin gives full access)
+  clusterRole: "cluster-admin"
+  # Token duration (optional, defaults to cluster default)
+  tokenDuration: "8760h"  # 1 year
+
+# Exposure configuration - choose Gateway API or Ingress
+exposure:
+  # Method: "gateway" for Gateway API, "ingress" for traditional Ingress
+  method: "ingress"  # Change to "gateway" if your cluster supports Gateway API
+  
+# Gateway API configuration (when exposure.method = "gateway")
+gateway:
+  # Gateway reference (must exist in cluster)
+  gatewayRef:
+    name: "cilium-gateway"        # Cilium Gateway created by Ansible
+    namespace: "gateway-system"
+  
+  # HTTPRoute configuration
+  httpRoute:
+    hostname: "dashboard.{{ .Values.global.domain }}"
+    path: "/"
+    pathType: "PathPrefix"
+    
+    # Backend service (Kubernetes Dashboard)
+    backend:
+      serviceName: "dashboard-kubernetes-dashboard-web"
+      servicePort: 8000
+      weight: 100
+
+# Ingress configuration (when exposure.method = "ingress") 
 ingress:
-  enabled: true
+  enabled: true  # Will be conditional in template
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"

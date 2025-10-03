@@ -1,4 +1,4 @@
-{{- if .Values.ingress.enabled }}
+{{- if and .Values.ingress.enabled (eq .Values.exposure.method "ingress") }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -7,8 +7,6 @@ metadata:
   labels:
     app.kubernetes.io/name: kubernetes-dashboard
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/part-of: ebpf-ai-platform
-    app.kubernetes.io/component: ingress
   annotations:
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}

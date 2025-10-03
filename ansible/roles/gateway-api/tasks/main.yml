@@ -1,0 +1,156 @@
+---
+# Gateway API Configuration Tasks
+# Configures Gateway API for existing Cilium installation
+
+- name: Check if Gateway API CRDs are installed
+  kubernetes.core.k8s_info:
+    api_version: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    name: gatewayclasses.gateway.networking.k8s.io
+  register: gateway_api_crds
+  ignore_errors: true
+
+- name: Install Gateway API CRDs
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ item }}"
+    wait: true
+    wait_condition:
+      type: Established
+      status: "True"
+    wait_timeout: 300
+  with_url: "{{ gateway_api.crd_manifest_url }}"
+  when: 
+    - gateway_api.install_crds | default(true)
+    - gateway_api_crds.resources | length == 0
+
+- name: Wait for Gateway API CRDs to be ready
+  kubernetes.core.k8s_info:
+    api_version: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    name: gatewayclasses.gateway.networking.k8s.io
+  register: gateway_crd_status
+  until: gateway_crd_status.resources | length > 0
+  retries: 30
+  delay: 10
+  when: gateway_api.install_crds | default(true)
+
+- name: Check if Cilium Gateway Class exists
+  kubernetes.core.k8s_info:
+    api_version: gateway.networking.k8s.io/v1
+    kind: GatewayClass
+    name: cilium
+  register: cilium_gateway_class
+  ignore_errors: true
+
+- name: Wait for Cilium to create Gateway Class
+  kubernetes.core.k8s_info:
+    api_version: gateway.networking.k8s.io/v1
+    kind: GatewayClass
+    name: cilium
+  register: cilium_gc_ready
+  until: cilium_gc_ready.resources | length > 0
+  retries: 12
+  delay: 10
+  when: gateway_api.create_gateway | default(true)
+
+- name: Create Gateway namespace
+  kubernetes.core.k8s:
+    name: "{{ gateway_api.gateway.namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+  when: gateway_api.create_gateway | default(true)
+
+- name: Create main Gateway resource
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: Gateway
+      metadata:
+        name: "{{ gateway_api.gateway.name }}"
+        namespace: "{{ gateway_api.gateway.namespace }}"
+        labels:
+          app.kubernetes.io/name: "{{ gateway_api.gateway.name }}"
+          app.kubernetes.io/component: "gateway"
+          app.kubernetes.io/managed-by: "ansible"
+      spec:
+        gatewayClassName: "{{ gateway_api.gateway.className }}"
+        listeners:
+        - name: http
+          port: 80
+          protocol: HTTP
+          allowedRoutes:
+            namespaces:
+              from: All
+        - name: https  
+          port: 443
+          protocol: HTTPS
+          allowedRoutes:
+            namespaces:
+              from: All
+          {{- if gateway_api.tls.enabled | default(false) }}
+          tls:
+            mode: Terminate
+          {{- endif }}
+    wait: true
+    wait_condition:
+      type: Programmed
+      status: "True"
+    wait_timeout: 300
+  when: gateway_api.create_gateway | default(true)
+
+- name: Display Gateway status
+  kubernetes.core.k8s_info:
+    api_version: gateway.networking.k8s.io/v1
+    kind: Gateway
+    name: "{{ gateway_api.gateway.name }}"
+    namespace: "{{ gateway_api.gateway.namespace }}"
+  register: gateway_status
+  when: gateway_api.create_gateway | default(true)
+
+- name: Show Gateway information
+  debug:
+    msg:
+      - "Gateway API configured successfully!"
+      - "Gateway Name: {{ gateway_api.gateway.name }}"
+      - "Gateway Namespace: {{ gateway_api.gateway.namespace }}"
+      - "Gateway Class: {{ gateway_api.gateway.className }}"
+      - "HTTP Port: 80"
+      - "HTTPS Port: 443"
+      - "Status: {{ gateway_status.resources[0].status.conditions | selectattr('type', 'equalto', 'Programmed') | map(attribute='status') | first | default('Unknown') }}"
+  when: 
+    - gateway_api.create_gateway | default(true)
+    - gateway_status.resources | length > 0
+
+- name: Create Gateway information ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'gateway-info.yaml.j2') | from_yaml }}"
+  when: gateway_api.create_gateway | default(true)
+
+- name: Create ServiceMonitor for Gateway (optional)
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        name: "{{ gateway_api.gateway.name }}-metrics"
+        namespace: "{{ gateway_api.monitoring.namespace | default('monitoring') }}"
+        labels:
+          app.kubernetes.io/name: "{{ gateway_api.gateway.name }}"
+          app.kubernetes.io/component: "monitoring"
+          release: "{{ gateway_api.monitoring.release | default('kube-prometheus-stack') }}"
+      spec:
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: "{{ gateway_api.gateway.name }}"
+        endpoints:
+        - port: metrics
+          path: /metrics
+          interval: 30s
+  when: 
+    - gateway_api.monitoring.enabled | default(false)
+    - gateway_api.create_gateway | default(true)

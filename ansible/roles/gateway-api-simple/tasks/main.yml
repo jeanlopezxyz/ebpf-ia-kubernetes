@@ -1,0 +1,26 @@
+---
+- name: Install Gateway API CRDs
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: gateway-system
+        labels:
+          name: gateway-system
+
+- name: Apply Gateway API standard CRDs
+  kubernetes.core.k8s:
+    state: present
+    src: https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml
+    wait: true
+    wait_timeout: 300
+
+- name: Display Gateway API installation status
+  debug:
+    msg:
+      - "✅ Gateway API CRDs installed successfully!"
+      - "📦 Version: v1.0.0"
+      - "🌐 Namespace: gateway-system"
+      - "📋 CRDs: GatewayClass, Gateway, HTTPRoute, ReferenceGrant"
