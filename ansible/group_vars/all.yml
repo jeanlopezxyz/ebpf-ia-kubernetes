@@ -58,6 +58,9 @@ cilium:
   enable_gateway_api: true
   enable_l2_announcements: false # Disabled for stability
   enable_netkit: false # Disabled for stability
+  enable_envoy: true # Required for Gateway API
+  enable_l7_proxy: true # Required for Gateway API
+  socket_lb_host_namespace_only: false # Required for Gateway API
 
 # ArgoCD namespace (full config in helm/charts/argocd/)
 argocd:
