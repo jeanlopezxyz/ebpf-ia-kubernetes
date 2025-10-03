@@ -17,10 +17,42 @@
     wait: true
     wait_timeout: 300
 
+- name: Create Cilium GatewayClass
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: GatewayClass
+      metadata:
+        name: cilium
+      spec:
+        controllerName: io.cilium/gateway-controller
+
+- name: Create main Cilium Gateway
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: Gateway
+      metadata:
+        name: cilium-gateway
+        namespace: gateway-system
+      spec:
+        gatewayClassName: cilium
+        listeners:
+          - name: http
+            protocol: HTTP
+            port: 80
+            allowedRoutes:
+              namespaces:
+                from: All
+
 - name: Display Gateway API installation status
   debug:
     msg:
       - "✅ Gateway API CRDs installed successfully!"
+      - "✅ Cilium GatewayClass created!"
+      - "✅ Main Gateway created: cilium-gateway"
       - "📦 Version: v1.0.0"
       - "🌐 Namespace: gateway-system"
       - "📋 CRDs: GatewayClass, Gateway, HTTPRoute, ReferenceGrant"
