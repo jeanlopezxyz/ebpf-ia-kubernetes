@@ -26,17 +26,17 @@ spec:
         - /bin/sh
         - -c
         - |
-          echo "🚀 Installing Tekton Pipelines v{{ .Values.tektonConfig.pipelinesVersion }}"
-          kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/{{ .Values.tektonConfig.pipelinesVersion }}/release.yaml
+          echo "🚀 Installing Tekton Pipelines (latest stable)"
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
           
           {{- if .Values.dashboard.enabled }}
-          echo "🎯 Installing Tekton Dashboard v{{ .Values.tektonConfig.dashboardVersion }}"
-          kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/{{ .Values.tektonConfig.dashboardVersion }}/tekton-dashboard-release.yaml
+          echo "🎯 Installing Tekton Dashboard (latest stable)"
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/release.yaml
           {{- end }}
           
           {{- if .Values.triggers.enabled }}
-          echo "🔧 Installing Tekton Triggers v{{ .Values.tektonConfig.triggersVersion }}"
-          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/{{ .Values.tektonConfig.triggersVersion }}/release.yaml
+          echo "🔧 Installing Tekton Triggers (latest stable)"
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml
           {{- end }}
           
           echo "✅ Tekton installation completed"
