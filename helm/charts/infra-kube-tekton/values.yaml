@@ -43,9 +43,9 @@ triggers:
 # External configurations that will be used by upstream installers
 tektonConfig:
   # These will point to official Tekton releases (latest versions)
-  pipelinesVersion: "v1.5.0"
-  dashboardVersion: "v0.62.0" 
-  triggersVersion: "v0.33.0"
+  pipelinesVersion: "latest"
+  dashboardVersion: "latest" 
+  triggersVersion: "latest"
   
   # Generic configurations (update for your environment)
   registry:
