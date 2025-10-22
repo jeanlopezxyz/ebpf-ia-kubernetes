@@ -1,6 +1,13 @@
-# OS
-.DS_Store
-Thumbs.db
+# Ansible
+*.retry
+
+# Backups
+*.backup
+*.bak
+registry-backup-*.tar.gz
+
+# Claude Code
+.claude/
 
 # IDE
 .vscode/
@@ -8,24 +15,23 @@ Thumbs.db
 *.swp
 *.swo
 
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.temp
-
-# Ansible
-*.retry
-
 # Kubernetes
 kubeconfig*
-
-# Backups
-*.backup
-*.bak
-registry-backup-*.tar.gz
 
 # Local testing
 test-*
 debug-*
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Security/Passwords
+passwd.md
+
+# Temporary files
+*.tmp
+*.temp

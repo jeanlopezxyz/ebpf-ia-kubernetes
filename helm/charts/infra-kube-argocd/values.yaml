@@ -1,4 +1,8 @@
-# ArgoCD Configuration for eBPF-AI Platform
+# ArgoCD Configuration - Generic Kubernetes Chart
+
+# Global configuration
+global:
+  domain: "example.com"  # Change to your domain (e.g., apps.k8s.mydomain.com)
 
 argo-cd:
   configs:
@@ -6,7 +10,7 @@ argo-cd:
       "server.insecure": "true" # HTTP mode for development
     cm:
       admin.enabled: "true"
-      url: "http://argocd.apps.k8s.labjp.xyz" # External URL
+      url: "http://argocd.{{ .Values.global.domain | default \"example.com\" }}" # External URL
     # secret:
     #   argocdServerAdminPassword: "REMOVED - using sealed secret"
     #   argocdServerAdminPasswordMtime: "2025-08-24T00:00:00Z"
@@ -29,10 +33,34 @@ argo-cd:
       - name: NO_PROXY
         value: "127.0.0.1,localhost,.svc,.cluster.local,kubernetes.default.svc"
 
-# Ingress configuration for ArgoCD
+# Exposure configuration - choose Gateway API or Ingress
+exposure:
+  # Method: "gateway" for Gateway API, "ingress" for traditional Ingress  
+  method: "ingress"  # Change to "gateway" if your cluster supports Gateway API
+
+# Gateway API configuration (when exposure.method = "gateway")
+gateway:
+  # Gateway reference (must exist in cluster)
+  gatewayRef:
+    name: "main-gateway"          # Change to your Gateway name
+    namespace: "gateway-system"   # Change to your Gateway namespace
+  
+  # HTTPRoute configuration
+  httpRoute:
+    hostname: "argocd.{{ .Values.global.domain }}"
+    path: "/"
+    pathType: "PathPrefix"
+    
+    # Backend service (ArgoCD server)
+    backend:
+      serviceName: "argocd-server"  # ArgoCD service name
+      servicePort: 80
+      weight: 100
+
+# Ingress configuration (when exposure.method = "ingress")
 ingress:
-  enabled: true
-  className: nginx
+  enabled: true  # Will be conditional in template
+  className: nginx  # Change to your ingress class (nginx, traefik, etc.)
   annotations:
     nginx.ingress.kubernetes.io/ssl-passthrough: "false"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
@@ -42,7 +70,7 @@ ingress:
     nginx.ingress.kubernetes.io/client-body-timeout: "60"
     nginx.ingress.kubernetes.io/client-max-body-size: "1m"
   hosts:
-    - host: argocd.apps.k8s.labjp.xyz
+    - host: "argocd.{{ .Values.global.domain }}"  # Uses global domain
       paths:
         - path: /
           pathType: Prefix

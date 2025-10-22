@@ -1,6 +1,9 @@
 # Tekton Complete Platform Configuration
+
+# Global configuration
 global:
   namespace: tekton
+  domain: "example.com"  # Change to your domain
 
 # Enable/disable components
 dashboard:
@@ -19,17 +22,17 @@ tektonConfig:
   dashboardVersion: "v0.60.0"
   triggersVersion: "v0.28.1"
   
-  # Custom configurations for eBPF-AI project
+  # Generic configurations (update for your environment)
   registry:
-    url: registry.apps.k8s.labjp.xyz
-    internal_url: registry.registry.svc.cluster.local:5000
+    url: "registry.{{ .Values.global.domain }}"
+    internal_url: "registry.registry.svc.cluster.local:5000"
   
   git:
-    repository: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
-    branch: main
+    repository: "https://github.com/your-org/your-repo.git"  # Change to your repository
+    branch: "main"
   
   webhook:
-    host: tekton-webhook.apps.k8s.labjp.xyz
+    host: "tekton-webhook.{{ .Values.global.domain }}"
     
   dashboard:
-    host: tekton-dashboard.apps.k8s.labjp.xyz
+    host: "tekton-dashboard.{{ .Values.global.domain }}"

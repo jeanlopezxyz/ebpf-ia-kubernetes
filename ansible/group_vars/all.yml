@@ -27,7 +27,7 @@ kubeadm:
   node_name: "labjp"
   hostname: "api.k8s.labjp.xyz" # DNS hostname for API server
   base_domain: "apps.k8s.labjp.xyz" # Base domain for applications
-  kubernetes_version: "v1.33.1" # Latest stable Kubernetes version (August 2025)
+  kubernetes_version: "v1.33.1" # Latest stable Kubernetes version (October 2025)
   pod_network_cidr: "10.244.0.0/16" # Pod network (65K IPs)
   service_cidr: "10.96.0.0/12" # Service network (1M IPs)
   vm:
@@ -53,14 +53,14 @@ network:
 
 # Cilium configuration
 cilium:
-  version: "1.18.1" # Latest stable version (August 2025)
+  version: "1.18.2" # Latest stable version (October 2025)
   enable_hubble: true
-  enable_gateway_api: true
+  enable_gateway_api: false # Disabled - using NGINX Ingress instead
   enable_l2_announcements: false # Disabled for stability
   enable_netkit: false # Disabled for stability
-  enable_envoy: true # Required for Gateway API
-  enable_l7_proxy: true # Required for Gateway API
-  socket_lb_host_namespace_only: false # Required for Gateway API
+  enable_envoy: false # Not needed without Gateway API
+  enable_l7_proxy: false # Not needed without Gateway API
+  socket_lb_host_namespace_only: false
 
 # ArgoCD namespace (full config in helm/charts/argocd/)
 argocd:
@@ -100,37 +100,13 @@ resources:
     cpu_limit: "500m"
     memory_limit: "1Gi"
 
-# Gateway API Configuration
+# Gateway API Configuration - DISABLED (using NGINX Ingress instead)
 gateway_api:
-  # Enable Gateway API installation and configuration
-  enabled: true
+  # Disable Gateway API to avoid conflicts with NGINX Ingress
+  enabled: false
   
   # Install Gateway API CRDs automatically
-  install_crds: true
-  crd_manifest_url: "https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml"
+  install_crds: false
   
   # Create Gateway resource
-  create_gateway: true
-  
-  # Gateway configuration
-  gateway:
-    name: "cilium-gateway"
-    namespace: "gateway-system"
-    className: "cilium"  # Uses Cilium as Gateway implementation
-    
-  # Gateway service exposure
-  service:
-    type: "NodePort"  # Compatible with external load balancer
-    node_ports:
-      http: 30080     # HTTP traffic
-      https: 30443    # HTTPS traffic
-      
-  # TLS configuration
-  tls:
-    enabled: false    # Disable for initial setup, enable later with cert-manager
-    
-  # Monitoring integration
-  monitoring:
-    enabled: false    # Enable when Prometheus is installed
-    namespace: "monitoring"
-    release: "kube-prometheus-stack"
+  create_gateway: false

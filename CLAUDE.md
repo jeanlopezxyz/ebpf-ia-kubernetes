@@ -7,21 +7,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is an eBPF + AI GitOps platform implementing a complete infrastructure-as-code solution. The system combines eBPF network monitoring with AI-based threat detection, managed entirely through GitOps patterns.
 
 ### Core Components:
-- **Ansible Bootstrap** - Day-0 infrastructure setup with Minikube, Cilium, ArgoCD
+- **Ansible Bootstrap** - Day-0 infrastructure setup with kubeadm+KVM, Cilium CNI, ArgoCD
 - **ArgoCD GitOps** - Declarative application management using App-of-Apps pattern  
 - **Tekton CI/CD** - Automated image building and deployment pipelines
 - **eBPF Applications** - ML Detector (Python) and eBPF Monitor (Go) for security monitoring
+- **Gateway API** - Modern ingress management with Cilium Gateway and HTTPRoute support
 
 ## Essential Commands
 
 ### Infrastructure Management
 ```bash
-make bootstrap          # Complete infrastructure setup (15-20 min)
-make status            # Health check across all components
+make bootstrap          # Complete kubeadm+KVM infrastructure setup (15-20 min)
+make status            # Health check across all components  
 make clean             # Teardown entire environment
 make sync              # Force ArgoCD application synchronization
 make port-forward      # Local access to services (ArgoCD:8080, Grafana:3000)
 make test              # Basic functionality validation
+make info              # Show all access URLs and credentials
 ```
 
 ### Development Workflow
@@ -106,7 +108,8 @@ deployment_mode:
 
 ### Key Configuration Files
 - **`ansible/group_vars/all.yml`** - Environment settings, network config, resource limits
-- **`helm/charts/ebpf-ai/values.yaml`** - Application configuration, image tags, ingress settings
+- **`helm/charts/app-kube-ebpf-ai/values.yaml`** - Main eBPF+AI application configuration
+- **`helm/charts/infra-kube-*/values.yaml`** - Infrastructure component configurations (ArgoCD, Grafana, Prometheus, etc.)
 - **`gitops/applications/`** - ArgoCD application definitions with sync policies
 
 ## Application Structure
@@ -139,9 +142,9 @@ Go application for eBPF-based network monitoring:
 5. **sync-deploy** → Trigger ArgoCD sync
 
 ### Image Management
-- **Registry**: Internal Minikube registry at `192.168.67.2:5000`
-- **Tagging**: Semantic versioning with `v$major.$minor.$patch`
-- **Storage**: Non-persistent for lab mode, configurable for production
+- **Registry**: Internal container registry (port 5000 via registry chart)
+- **Tagging**: Semantic versioning with `v$major.$minor.$patch`  
+- **Storage**: Persistent via PVC, configurable storage class
 
 ## GitOps Patterns
 
@@ -162,8 +165,9 @@ ebpf-ai-apps (root)
 ## Networking and Access
 
 ### Service Access Patterns
-- **Ingress Routes**: `/argocd`, `/grafana`, `/dashboard` via NGINX
-- **NodePort**: Direct service access in lab mode
+- **Gateway API**: Modern ingress with Cilium Gateway and HTTPRoute resources
+- **NGINX Ingress**: Traditional ingress routes `/argocd`, `/grafana`, `/dashboard`
+- **NodePort**: Direct service access for development
 - **External Load Balancer**: pfSense HAProxy managed access in production mode
 
 ### Default Credentials
@@ -181,10 +185,16 @@ ebpf-ai-apps (root)
 ## Development Notes
 
 ### Helm Chart Dependencies
-The main `ebpf-ai` chart requires dependency builds:
+The main application chart requires dependency builds:
 ```bash
-cd helm/charts/ebpf-ai && helm dependency build
+cd helm/charts/app-kube-ebpf-ai && helm dependency build
 ```
+
+### Chart Architecture
+The project uses a modular Helm chart approach:
+- **`infra-kube-*`** charts: Infrastructure components (ArgoCD, Grafana, Prometheus, Registry, etc.)
+- **`app-kube-*`** charts: Application-specific components (eBPF+AI security monitoring)
+- All charts are designed to be portable across different Kubernetes clusters
 
 ### ArgoCD Application Debugging
 When applications show `OutOfSync` or `Degraded`:
@@ -206,6 +216,13 @@ For pipeline failures:
 - **ArgoCD OutOfSync**: Often due to Helm template validation errors - check logs
 - **Registry connectivity**: Use internal IP `192.168.67.2:5000` for in-cluster access
 
+### Gateway API Configuration
+The system supports modern Gateway API for ingress management:
+- **Cilium Gateway**: Uses Cilium as the Gateway API implementation
+- **HTTPRoute Resources**: Modern alternative to traditional Ingress resources
+- **Deployment**: Automatically installed via `gateway-api-simple` Ansible role
+- **Configuration**: Gateway and HTTPRoute templates in `helm/charts/infra-kube-*/templates/httproute.yaml`
+
 ### External Load Balancer Configuration (pfSense HAProxy)
 For production deployments with external load balancer:
 - **TCP Pass-through**: API access via port 6443 without SSL termination
@@ -213,4 +230,5 @@ For production deployments with external load balancer:
 - **Fixed NodePorts**: 30080 (HTTP), 30443 (HTTPS), 30082 (GitHub Webhook) for stable configuration
 - **VIP Configuration**: Dedicated Virtual IP for Kubernetes services
 
-The system prioritizes GitOps principles with everything managed declaratively through Git, automated CI/CD via Tekton, and comprehensive observability through Prometheus/Grafana stack.
+### Architecture Summary
+The system prioritizes GitOps principles with everything managed declaratively through Git, automated CI/CD via Tekton, comprehensive observability through Prometheus/Grafana stack, and modern networking via Gateway API with Cilium CNI.

@@ -1,0 +1,28 @@
+{{- if eq .Values.exposure.method "gateway" }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana-httproute
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: httproute
+spec:
+  parentRefs:
+  - name: {{ .Values.gateway.gatewayRef.name }}
+    namespace: {{ .Values.gateway.gatewayRef.namespace }}
+    
+  hostnames:
+  - {{ .Values.gateway.httpRoute.hostname | quote }}
+  
+  rules:
+  - matches:
+    - path:
+        type: {{ .Values.gateway.httpRoute.pathType }}
+        value: {{ .Values.gateway.httpRoute.path }}
+    backendRefs:
+    - name: {{ .Values.gateway.httpRoute.backend.serviceName | default "grafana" }}
+      port: {{ .Values.gateway.httpRoute.backend.servicePort }}
+      weight: {{ .Values.gateway.httpRoute.backend.weight | default 100 }}
+{{- end }}

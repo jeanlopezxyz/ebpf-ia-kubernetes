@@ -1,4 +1,16 @@
-# Grafana Configuration for eBPF-AI Platform
+# Grafana Configuration - Generic Kubernetes Chart
+
+# Global configuration
+global:
+  domain: "example.com"  # Change to your domain (e.g., apps.k8s.mydomain.com)
+
+# Admin credentials (creates secret automatically)
+admin:
+  existingSecret: "grafana-admin-secret"
+  userKey: admin-user
+  passwordKey: admin-password
+  user: admin
+  password: admin123
 
 grafana:
   enabled: true
@@ -20,7 +32,7 @@ grafana:
   persistence:
     enabled: true
     size: 1Gi
-    storageClassName: "local-path"
+    storageClassName: ""  # Use cluster default storage class
     
   # Enhanced plugins for eBPF-AI visualizations (compatible with Grafana v10+)
   plugins:
@@ -35,7 +47,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://infra-kube-prometheus-server.prometheus.svc.cluster.local:80
+          url: http://prometheus-server.monitoring.svc.cluster.local:80  # Change to your Prometheus service
           access: proxy
           isDefault: true
           jsonData:
@@ -104,19 +116,43 @@ grafana:
       cpu: 250m
       memory: 256Mi
 
-# Custom Ingress configuration (outside of grafana config)
+# Exposure configuration - choose Gateway API or Ingress
+exposure:
+  # Method: "gateway" for Gateway API, "ingress" for traditional Ingress
+  method: "ingress"  # Change to "gateway" if your cluster supports Gateway API
+
+# Gateway API configuration (when exposure.method = "gateway")
+gateway:
+  # Gateway reference (must exist in cluster)
+  gatewayRef:
+    name: "main-gateway"          # Change to your Gateway name
+    namespace: "gateway-system"   # Change to your Gateway namespace
+  
+  # HTTPRoute configuration
+  httpRoute:
+    hostname: "grafana.{{ .Values.global.domain }}"
+    path: "/"
+    pathType: "PathPrefix"
+    
+    # Backend service (Grafana service name)
+    backend:
+      serviceName: "grafana"      # Official Grafana chart service name
+      servicePort: 3000
+      weight: 100
+
+# Ingress configuration (when exposure.method = "ingress")
 ingress:
-  enabled: true
+  enabled: true  # Will be conditional in template
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
   hosts:
-    - host: grafana.apps.k8s.labjp.xyz
+    - host: "grafana.{{ .Values.global.domain }}"  # Uses global domain
       paths:
         - path: /
           pathType: Prefix
           service:
-            name: infra-kube-grafana
+            name: grafana  # Fixed: use actual service name
             port: 3000
   tls: []

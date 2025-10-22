@@ -11,42 +11,182 @@
     name: argo
     repo_url: https://argoproj.github.io/argo-helm
     
-- name: Install ArgoCD via custom Helm chart
+- name: Install ArgoCD via official Helm chart
   kubernetes.core.helm:
     name: argocd
-    chart_ref: "{{ playbook_dir }}/../helm/charts/argocd"
+    chart_ref: argo/argo-cd
     release_namespace: "{{ argocd.namespace }}"
-    dependency_update: true
+    update_repo_cache: true
     values:
-      # Override values from Ansible variables if needed
+      global:
+        domain: "{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
       argo-cd:
         configs:
+          params:
+            "server.insecure": "true"
           cm:
+            admin.enabled: "true"
             url: "http://argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
-      ingress:
-        hosts:
-          - host: "argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
-            paths:
-              - path: /
-                pathType: Prefix
-                service:
-                  name: argocd-server
-                  port: 80
+        server:
+          insecure: true
+          service:
+            type: "ClusterIP"
+            ports:
+              - port: 80
+                targetPort: 8080
+          ingress:
+            enabled: true
+            className: nginx
+            annotations:
+              nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+              nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+              nginx.ingress.kubernetes.io/ssl-redirect: "false"
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+              nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+              nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+              nginx.ingress.kubernetes.io/client-body-timeout: "60"
+              nginx.ingress.kubernetes.io/client-max-body-size: "1m"
+              nginx.ingress.kubernetes.io/proxy-ssl-redirect: "false"
+              nginx.ingress.kubernetes.io/proxy-ssl-verify: "false"
+              nginx.ingress.kubernetes.io/configuration-snippet: |
+                proxy_set_header X-Forwarded-Proto https;
+                proxy_set_header X-Forwarded-Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            hosts:
+              - host: "argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
+                paths:
+                  - path: /
+                    pathType: Prefix
+                    service:
+                      name: argocd-server
+                      port: 80
+                  - path: /
+                    pathType: Prefix
+                    service:
+                      name: argocd-server
+                      port: 8443
+        repoServer:
+          env:
+            - name: NO_PROXY
+              value: "127.0.0.1,localhost,.svc,.cluster.local,kubernetes.default.svc"
     wait: true
     timeout: 600s
     
-- name: Wait for ArgoCD pods to be running
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Pod
+- name: Wait for ArgoCD deployments to be ready
+  kubernetes.core.k8s:
+    kind: Deployment
+    api_version: apps/v1
+    name: argocd-server
     namespace: "{{ argocd.namespace }}"
-    label_selectors:
-      - app.kubernetes.io/part-of=argocd
     wait: true
-    wait_condition:
-      type: Ready
-      status: "True"
+    wait_sleep: 5
     wait_timeout: 300
+    wait_condition:
+      type: Progressing
+      status: "True"
+      reason: NewReplicaSetAvailable
+    
+- name: Set ArgoCD admin credentials to admin/admin123 immediately after install
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: argocd-initial-admin-secret
+        namespace: "{{ argocd.namespace }}"
+      data:
+        password: "{{ 'admin123' | b64encode }}"
+        
+- name: Create ArgoCD Ingress if not created by Helm
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: argocd-ingress
+        namespace: "{{ argocd.namespace }}"
+        annotations:
+          nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+          nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+          nginx.ingress.kubernetes.io/ssl-redirect: "false"
+          nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+          nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+          nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+          nginx.ingress.kubernetes.io/client-body-timeout: "60"
+          nginx.ingress.kubernetes.io/client-max-body-size: "1m"
+      spec:
+        ingressClassName: nginx
+        rules:
+        - host: "argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
+          http:
+            paths:
+            - path: /
+              pathType: Prefix
+              backend:
+                service:
+                  name: argocd-server
+                  port:
+                    number: 80
+    
+- name: Apply ArgoCD configuration fixes for wildcard compatibility
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: argocd-cmd-params-cm
+        namespace: "{{ argocd.namespace }}"
+      data:
+        server.insecure: "true"
+        server.basehref: "/"
+        server.disable.auth: "false"
+        server.rootpath: "/"
+        server.enable.gzip: "false"
+        server.staticassets: "false"
+        
+- name: Set ArgoCD main secret credentials to admin/admin123
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: argocd-secret
+        namespace: "{{ argocd.namespace }}"
+      data:
+        admin.password: "{{ 'admin123' | b64encode }}"
+        admin.passwordMtime: "{{ '1735707600' | b64encode }}"
+        
+- name: Set ArgoCD initial admin secret credentials to admin/admin123
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: argocd-initial-admin-secret
+        namespace: "{{ argocd.namespace }}"
+      data:
+        password: "{{ 'admin123' | b64encode }}"
+        
+- name: Update ArgoCD URL configuration for wildcard
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: argocd-cm
+        namespace: "{{ argocd.namespace }}"
+      data:
+        url: "http://argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
+        statusbadge.enabled: "false"
+        timeout.hard.reconciliation: "0s"
+        timeout.reconciliation: "180s"
     
 - name: Get ArgoCD server service information
   kubernetes.core.k8s_info:
@@ -73,7 +213,66 @@
 #   - Then add label: kubectl label secret git-ssh-key argocd.argoproj.io/secret-type=repository -n argocd
 #   - Update applications to use: repoURL: "git@github.com:user/repo.git"
   
-# ArgoCD Ingress is now managed by the ArgoCD Helm chart
+# NGINX Ingress Controller is installed via dedicated nginx-ingress role
+# This section only creates ArgoCD-specific ingress resources
+
+# Create ArgoCD Ingress pointing to NGINX controller
+- name: Create ArgoCD Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: argocd-ingress
+        namespace: "{{ argocd.namespace }}"
+        annotations:
+          kubernetes.io/ingress.class: nginx
+          nginx.ingress.kubernetes.io/ssl-passthrough: "false"
+          nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+          nginx.ingress.kubernetes.io/ssl-redirect: "false"
+          nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+          nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+          nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+          nginx.ingress.kubernetes.io/client-body-timeout: "60"
+          nginx.ingress.kubernetes.io/client-max-body-size: "1m"
+      spec:
+        ingressClassName: nginx
+        rules:
+          - host: "argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
+            http:
+              paths:
+                - path: /applications
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: argocd-server
+                      port:
+                        number: 80
+                - path: /api
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: argocd-server
+                      port:
+                        number: 80
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: argocd-server
+                      port:
+                        number: 80
+
+# Wait for ArgoCD Ingress to be configured
+- name: Wait for ArgoCD Ingress to exist
+  kubernetes.core.k8s_info:
+    api_version: networking.k8s.io/v1
+    kind: Ingress
+    name: argocd-ingress
+    namespace: "{{ argocd.namespace }}"
+    wait: true
+    wait_timeout: 300
 
 # Kubernetes Dashboard will be managed by ArgoCD as an application
   
@@ -81,23 +280,65 @@
   debug:
     msg:
       - "🚀 ArgoCD GitOps installed successfully!"
-      - "🌐 Access URL: https://argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
       - "👤 Username: admin"
-      - "🔐 Password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d"
-      - "💡 Port forward: kubectl port-forward svc/argocd-server -n argocd 8080:80"
+      - "🔐 Password: admin123"
+      - "🌐 Wildcard Access: https://argocd.{{ kubeadm.base_domain | default('apps.k8s.labjp.xyz') }}"
+      - "📋 Architecture: HAProxy (SSL termination) → NGINX → ArgoCD"
+      - "   NGINX Ingress Controller: HTTP NodePort 30080 only"
+      - "   ArgoCD Service: ClusterIP (internal)"
+      - "📝 pfSense HAProxy Configuration:"
+      - "   Frontend: *.apps.k8s.labjp.xyz:443 (SSL termination)"
+      - "   Backend: 10.0.10.100:30080 (HTTP only)"
+      - "   ⚠️  Eliminar backend HTTPS - solo usar HTTP"
+      - "💡 SSL Termination: HAProxy maneja SSL con wildcard cert"
+      - "🔧 ArgoCD Ingress: Configurado para backend HTTP con headers"
+      - "✅ Flujo: DNS → HAProxy (SSL termination) → HTTP (30080) → NGINX → ArgoCD"
 
-- name: Wait for ArgoCD to be fully ready
+- name: Restart ArgoCD deployment to apply configuration changes
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: argocd-server
+        namespace: "{{ argocd.namespace }}"
+      spec:
+        template:
+          metadata:
+            annotations:
+              configmap-restart: "{{ ansible_date_time.epoch }}"
+    
+- name: Wait for ArgoCD deployment to be ready
   kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Pod
+    api_version: apps/v1
+    kind: Deployment
+    name: argocd-server
     namespace: "{{ argocd.namespace }}"
-    label_selectors:
-      - app.kubernetes.io/name=argocd-server
     wait: true
-    wait_condition:
-      type: Ready
-      status: "True"
+    wait_sleep: 5
     wait_timeout: 300
+    wait_condition:
+      type: Progressing
+      status: "True"
+      reason: NewReplicaSetAvailable
+    
+- name: Wait for ArgoCD server pods to be ready
+  kubernetes.core.k8s:
+    kind: Deployment
+    api_version: apps/v1
+    name: argocd-server
+    namespace: "{{ argocd.namespace }}"
+    wait: true
+    wait_sleep: 5
+    wait_timeout: 300
+    wait_condition:
+      type: Available
+      status: "True"
+
+- name: Pause for ArgoCD to stabilize
+  pause:
+    seconds: 30
     
 # Password configuration is now handled by the ArgoCD Helm chart
     

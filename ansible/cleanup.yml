@@ -13,7 +13,7 @@
         api_version: argoproj.io/v1alpha1
         kind: Application
         name: "{{ item }}"
-        namespace: argocd
+        namespace: gitops
       loop:
         - app-of-apps
         - ebpf-ai
@@ -36,7 +36,7 @@
         name: "{{ item }}"
       loop:
         - ebpf-security
-        - argocd
+        - gitops
         - registry
         - prometheus
         - grafana

@@ -5,7 +5,7 @@
   gather_facts: yes
   vars:
     kubernetes_namespace: "ebpf-security"
-    argocd_namespace: "argocd"
+    argocd_namespace: "gitops"
   environment:
     KUBECONFIG: "{{ ansible_env.HOME }}/.kube/config{% if cluster_method == 'kubeadm' %}-kubeadm{% endif %}"
 
@@ -26,10 +26,6 @@
       wait_for:
         timeout: 60
 
-    - name: Install Gateway API CRDs
-      include_role:
-        name: gateway-api-simple
-
     - name: Install NGINX Ingress Controller
       include_role:
         name: nginx-ingress
@@ -38,9 +34,9 @@
       include_role:
         name: storage
 
-    # - name: Install ArgoCD GitOps
-    #   include_role:
-    #     name: argocd
+    - name: Install ArgoCD GitOps
+      include_role:
+        name: argocd
 
     - name: Display access information
       include_role:

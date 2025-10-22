@@ -18,17 +18,18 @@
           enabled: "{{ cilium.enable_hubble }}"
         ui:
           enabled: "{{ cilium.enable_hubble }}"
-      # Gateway API support with Envoy
+      # Gateway API support - completely disabled
       gatewayAPI:
-        enabled: "{{ cilium.enable_gateway_api }}"
+        enabled: false
       envoy:
-        enabled: "{{ cilium.enable_envoy }}"
-      l7Proxy: "{{ cilium.enable_l7_proxy }}"
+        enabled: false
+      l7Proxy: false
+      # Socket load balancer configuration
       socketLB:
         hostNamespaceOnly: "{{ cilium.socket_lb_host_namespace_only }}"
+      # Disable L7 load balancer to avoid conflicts
       loadBalancer:
-        l7:
-          backend: envoy
+        mode: "snat"
       # Enable eBPF-based kube-proxy replacement
       kubeProxyReplacement: true
       # Pod CIDR configuration

@@ -1,10 +1,11 @@
-# Registry chart default values
+# Container Registry Chart - Generic Kubernetes
+
+# Global configuration
+global:
+  domain: "example.com"  # Change to your domain (e.g., apps.k8s.mydomain.com)
 
 nameOverride: "registry"
 fullnameOverride: "registry"
-
-# Base domain for ingress hosts (e.g., apps.k8s.labjp.xyz)
-domainBase: "apps.k8s.labjp.xyz"
 
 replicaCount: 1
 
@@ -21,7 +22,7 @@ service:
 persistence:
   enabled: true
   existingClaim: ""
-  storageClass: "local-path"
+  storageClass: ""  # Leave empty for default storage class or specify your storage class
   size: 15Gi  # Generous storage for multiple container images and layers
 
 resources:
@@ -47,6 +48,49 @@ probes:
   liveness:
     initialDelaySeconds: 10
     periodSeconds: 10
+
+# Exposure configuration - choose Gateway API or Ingress
+exposure:
+  # Method: "gateway" for Gateway API, "ingress" for traditional Ingress, "nodeport" for NodePort only
+  method: "nodeport"  # Change to "gateway" for better performance with Cilium
+
+# Gateway API configuration (when exposure.method = "gateway")  
+gateway:
+  # Gateway reference (must exist in cluster)
+  gatewayRef:
+    name: "cilium-gateway"
+    namespace: "kube-system"
+  
+  # HTTPRoute configuration
+  httpRoute:
+    enabled: true
+    hostname: "registry.{{ .Values.global.domain }}"
+    path: "/"
+    pathType: "PathPrefix"
+    backend:
+      serviceName: "registry"
+      servicePort: 5000
+      weight: 100
+    # Security filters (minimal for registry)
+    filters:
+      rateLimiting:
+        enabled: false  # Registry needs high throughput for image operations
+
+# Ingress configuration (when exposure.method = "ingress")
+ingress:
+  enabled: false  # Will be conditional in template
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"  # Allow large image uploads
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/client-max-body-size: "0"
+  hosts:
+    - host: "registry.{{ .Values.global.domain }}"
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
 
 # TLS Configuration
 tls:

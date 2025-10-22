@@ -1,4 +1,8 @@
-# Prometheus Configuration for eBPF-AI Platform
+# Prometheus Configuration - Generic Kubernetes Chart
+
+# Global configuration
+global:
+  domain: "example.com"  # Change to your domain (e.g., apps.k8s.mydomain.com)
 
 # Prometheus server configuration
 prometheus:
@@ -9,7 +13,7 @@ prometheus:
     persistentVolume:
       enabled: true
       size: 5Gi  # Increased for longer metric retention
-      storageClass: "local-path"
+      storageClass: ""  # Leave empty for default storage class or specify your storage class
     service:
       type: ClusterIP
       port: 80
@@ -112,7 +116,7 @@ alertmanager:
   enabled: true
   persistence:
     size: 2Gi
-    storageClass: "local-path"
+    storageClass: ""  # Use cluster default storage class
   podSecurityContext:
     runAsUser: 65534
     runAsNonRoot: true

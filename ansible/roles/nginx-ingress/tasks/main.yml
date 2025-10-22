@@ -14,6 +14,12 @@
             http: 30080
             https: 30443
           externalTrafficPolicy: Local
+        config:
+          use-forwarded-headers: "true"
+          compute-full-forwarded-for: "true"
+          proxy-real-ip-cidr: "10.0.10.0/24"
+          use-proxy-protocol: "false"
+          ssl-protocols: "TLSv1.2 TLSv1.3"
         ingressClassResource:
           default: true
         metrics:
@@ -44,7 +50,7 @@
   kubernetes.core.helm:
     name: ingress-nginx
     chart_ref: ingress-nginx/ingress-nginx
-    chart_version: "4.11.3"
+    chart_version: "4.13.3"
     release_namespace: ingress-nginx
     create_namespace: true
     values: "{{ nginx_values }}"

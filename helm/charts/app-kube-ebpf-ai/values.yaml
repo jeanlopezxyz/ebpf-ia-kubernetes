@@ -24,9 +24,9 @@ mlDetector:
   name: ml-detector
   replicaCount: 1  # Images are now available
   image:
-    repository: quay.io/jealopez/ml-detector
+    repository: "your-registry/ml-detector"  # Change to your container registry
     tag: "latest"
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     # Ejemplo de imagen con GPU (cuando habilites GPU):
     # repository: tensorflow/tensorflow
     # tag: "2.13.0-gpu"
@@ -49,7 +49,7 @@ mlDetector:
   persistence:
     enabled: true
     size: 1Gi
-    storageClass: "local-path"  # Local path provisioner for single node
+    storageClass: ""  # Use cluster default storage class
       
   env:
     - name: MODEL_PATH
@@ -101,7 +101,7 @@ ebpfMonitor:
   name: ebpf-monitor
   replicaCount: 1  # Images are now available
   image:
-    repository: quay.io/jealopez/ebpf-monitor
+    repository: "your-registry/ebpf-monitor"  # Change to your container registry
     tag: "latest"
     pullPolicy: Always
     
@@ -191,13 +191,47 @@ metrics:
 # Storage Configuration
 persistence:
   enabled: true
-  storageClass: "local-path"
+  storageClass: ""  # Use cluster default storage class
   size: 5Gi
   accessMode: ReadWriteOnce
 
-# Ingress Configuration
+# Exposure configuration - choose Gateway API or Ingress
+exposure:
+  # Method: "gateway" for Gateway API, "ingress" for traditional Ingress
+  method: "ingress"  # Change to "gateway" for better performance with Cilium
+
+# Gateway API configuration (when exposure.method = "gateway")
+gateway:
+  # Gateway reference (must exist in cluster)
+  gatewayRef:
+    name: "cilium-gateway"
+    namespace: "gateway-system"  # Standard Gateway API namespace
+  
+  # HTTPRoute configuration for ML Detector API
+  httpRoutes:
+    api:
+      enabled: true
+      hostname: "api.ebpf-ai.{{ .Values.global.domain }}"
+      path: "/api"
+      pathType: "PathPrefix"
+      backend:
+        serviceName: "ml-detector"
+        servicePort: 5000
+        weight: 100
+    
+    metrics:
+      enabled: true  
+      hostname: "metrics.ebpf-ai.{{ .Values.global.domain }}"
+      path: "/metrics"
+      pathType: "PathPrefix"
+      backend:
+        serviceName: "ebpf-monitor"
+        servicePort: 8800
+        weight: 100
+
+# Ingress Configuration (when exposure.method = "ingress")
 ingress:
-  enabled: false  # Temporarily disabled to fix NGINX conflicts
+  enabled: false  # Will be conditional in template
   hosts:
     - host: ebpf-ai.apps.k8s.labjp.xyz
       paths:
