@@ -238,6 +238,166 @@
         }
       },
       "gridPos": {"h": 4, "w": 6, "x": 6, "y": 24}
+    },
+    {
+      "id": 11,
+      "title": "🔴 Top Suspicious IPs",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "topk(10, sum by (source_ip) (ml_detector_threats_total))",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "displayMode": "list",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 5},
+              {"color": "red", "value": 20}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "source_ip"},
+            "properties": [
+              {"id": "displayName", "value": "🎯 IP Address"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Value"},
+            "properties": [
+              {"id": "displayName", "value": "🚨 Threats"}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 12, "w": 8, "x": 0, "y": 28}
+    },
+    {
+      "id": 12,
+      "title": "👤 Compromised Users/Processes",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "topk(10, sum by (source_ip) (ml_detector_threats_total{source_ip!~\"api_request|prometheus_query\"}))",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "displayMode": "list",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 3},
+              {"color": "red", "value": 10}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "source_ip"},
+            "properties": [
+              {"id": "displayName", "value": "👤 User/Process"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Value"},
+            "properties": [
+              {"id": "displayName", "value": "⚠️ Incidents"}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 12, "w": 8, "x": 8, "y": 28}
+    },
+    {
+      "id": 13,
+      "title": "📊 Suspicious Activity Levels",
+      "type": "bargauge",
+      "targets": [
+        {
+          "expr": "ml_detector_suspicious_ip_activity",
+          "refId": "A",
+          "legendFormat": "{{source_ip}} - {{activity_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 0.3},
+              {"color": "orange", "value": 0.6},
+              {"color": "red", "value": 0.8}
+            ]
+          },
+          "unit": "percentunit",
+          "displayName": "Activity Level",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": {"h": 12, "w": 8, "x": 16, "y": 28}
+    },
+    {
+      "id": 14,
+      "title": "🔍 Threat Details by IP",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (source_ip, threat_type) (increase(ml_detector_threats_total[5m]))",
+          "refId": "A",
+          "legendFormat": "{{source_ip}} - {{threat_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40}
     }
   ]
 }
