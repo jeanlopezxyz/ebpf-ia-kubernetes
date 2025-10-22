@@ -1,8 +1,8 @@
-# Prometheus Configuration - Generic Kubernetes Chart
+# Prometheus Configuration - Updated for v3.7.1
 
 # Global configuration
 global:
-  domain: "example.com"  # Change to your domain (e.g., apps.k8s.mydomain.com)
+  domain: "apps.k8s.labjp.xyz"
 
 # Prometheus server configuration
 prometheus:
@@ -10,14 +10,34 @@ prometheus:
       
   # Prometheus server configuration  
   server:
+    image:
+      repository: quay.io/prometheus/prometheus
+      tag: v3.7.1
+      pullPolicy: IfNotPresent
+      
     persistentVolume:
       enabled: true
-      size: 5Gi  # Increased for longer metric retention
-      storageClass: ""  # Leave empty for default storage class or specify your storage class
+      size: 10Gi  # Increased for longer metric retention
+      storageClass: "local-path"  # Use local-path storage class
+      accessModes:
+        - ReadWriteOnce
+        
     service:
       type: ClusterIP
       port: 80
+      targetPort: 9090
+      
     retention: "30d"
+    
+    # Ingress configuration
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+      hosts:
+        - "prometheus.apps.k8s.labjp.xyz"
+      tls: []
     
     # Security context: run as non-root (required by cluster policy)
     securityContext:
@@ -36,18 +56,13 @@ prometheus:
       query.max-concurrency: "20"
       query.timeout: "2m"
       query.max-samples: "50000000"
-      enable-feature: ""
-    
-    # Fix reload configuration
-    configReloader:
-      enabled: true
-    reloadStrategy: "http"
+      web.enable-lifecycle: true
     
     # Resource limits to prevent OOM
     resources:
       limits:
-        cpu: 1000m
-        memory: 2Gi
+        cpu: 2000m
+        memory: 4Gi
       requests:
         cpu: 500m
         memory: 1Gi
@@ -111,15 +126,36 @@ serviceMonitor:
     app.kubernetes.io/name: prometheus
     app.kubernetes.io/part-of: ebpf-ai-platform
 
-# AlertManager subchart configuration (exact official structure)
+# AlertManager subchart configuration (updated for v0.28.1)
 alertmanager:
   enabled: true
-  persistence:
-    size: 2Gi
-    storageClass: ""  # Use cluster default storage class
-  podSecurityContext:
+  image:
+    repository: quay.io/prometheus/alertmanager
+    tag: v0.28.1
+    pullPolicy: IfNotPresent
+    
+  persistentVolume:
+    enabled: true
+    size: 5Gi
+    storageClass: "local-path"  # Use local-path storage class
+    accessModes:
+      - ReadWriteOnce
+      
+  service:
+    type: ClusterIP
+    port: 9093
+    
+  securityContext:
     runAsUser: 65534
     runAsNonRoot: true
     runAsGroup: 65534
     fsGroup: 65534
+    
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
 

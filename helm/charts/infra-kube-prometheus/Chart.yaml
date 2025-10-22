@@ -2,8 +2,8 @@ apiVersion: v2
 name: infra-kube-prometheus
 description: Prometheus monitoring for eBPF-AI platform with custom scrape configs
 type: application
-version: 1.0.0
-appVersion: "v2.54.1"
+version: 1.1.0
+appVersion: "v3.7.1"
 icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/prometheus/icon/color/prometheus-icon-color.png
 kubeVersion: ">=1.26.0-0"
 keywords:
@@ -20,7 +20,7 @@ maintainers:
     email: team@ebpf-ai.local
 dependencies:
   - name: prometheus
-    version: "25.6.0"
+    version: "27.41.1"
     repository: "https://prometheus-community.github.io/helm-charts"
 annotations:
   artifacthub.io/category: monitoring
