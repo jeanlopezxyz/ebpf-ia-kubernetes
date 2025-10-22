@@ -1,8 +1,8 @@
-# Grafana Configuration - Generic Kubernetes Chart
+# Grafana Configuration - Updated for v12.2.0
 
 # Global configuration
 global:
-  domain: "example.com"  # Change to your domain (e.g., apps.k8s.mydomain.com)
+  domain: "apps.k8s.labjp.xyz"
 
 # Admin credentials (creates secret automatically)
 admin:
@@ -16,11 +16,9 @@ grafana:
   enabled: true
   
   # Basic configuration  
-  # adminPassword: "admin123"  # REMOVED - now using sealed secret
   admin:
-    existingSecret: "grafana-admin-secret"
-    userKey: admin-user
-    passwordKey: admin-password
+    user: admin
+    password: admin123
   
   
   # Service configuration
@@ -31,8 +29,8 @@ grafana:
   # Persistence for dashboards and data
   persistence:
     enabled: true
-    size: 1Gi
-    storageClassName: ""  # Use cluster default storage class
+    size: 5Gi
+    storageClassName: "local-path"
     
   # Enhanced plugins for eBPF-AI visualizations (compatible with Grafana v10+)
   plugins:
@@ -47,7 +45,7 @@ grafana:
       datasources:
         - name: Prometheus
           type: prometheus
-          url: http://prometheus-server.monitoring.svc.cluster.local:80  # Change to your Prometheus service
+          url: http://prometheus-server.prometheus.svc.cluster.local:80
           access: proxy
           isDefault: true
           jsonData:
@@ -107,14 +105,27 @@ grafana:
       cookie_secure: false
       strict_transport_security: false
       
+  # Ingress configuration
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    hosts:
+      - host: grafana.apps.k8s.labjp.xyz
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
   # Resource limits
   resources:
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 1000m
+      memory: 1Gi
     requests:
       cpu: 250m
-      memory: 256Mi
+      memory: 512Mi
 
 # Exposure configuration - choose Gateway API or Ingress
 exposure:

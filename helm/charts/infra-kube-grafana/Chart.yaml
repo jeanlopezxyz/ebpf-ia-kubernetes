@@ -2,8 +2,8 @@ apiVersion: v2
 name: infra-kube-grafana
 description: Grafana dashboards for eBPF-AI platform with custom visualizations
 type: application
-version: 1.0.0
-appVersion: "v11.1.0"
+version: 1.1.0
+appVersion: "v12.2.0"
 icon: https://raw.githubusercontent.com/cncf/artwork/master/projects/grafana/icon/color/grafana-icon-color.png
 kubeVersion: ">=1.26.0-0"
 keywords:
@@ -21,7 +21,7 @@ maintainers:
     email: team@ebpf-ai.local
 dependencies:
   - name: grafana
-    version: "7.0.8"
+    version: "10.1.2"
     repository: "https://grafana.github.io/helm-charts"
 annotations:
   artifacthub.io/category: monitoring
