@@ -183,6 +183,60 @@ ml_detector_model_decision_breakdown{
 } = 0.75
 ```
 
+## 🧠 Sistema de Aprendizaje Adaptativo
+
+### **Problema Resuelto**
+El sistema **NO** entrena con datos de amenazas detectadas, evitando que aprenda comportamientos maliciosos como normales.
+
+### **Entrenamiento Inteligente**
+```python
+def detect(data):
+    # 1. Detectar amenazas PRIMERO
+    threats = detect_threats(data)
+    
+    if threats:
+        # 🚨 AMENAZA DETECTADA - NO agregar a entrenamiento
+        logger.info("🚨 THREAT_DETECTED: Not adding to training data")
+        return threat_result
+    else:
+        # ✅ DATOS LIMPIOS - agregar a entrenamiento
+        add_clean_data_to_training(data)
+        logger.info("✅ CLEAN_DATA: Adding to training data")
+        return clean_result
+```
+
+### **Whitelist Automática de IPs**
+```python
+# Auto-whitelist después de 50 observaciones limpias
+if clean_ratio > 95% and observations >= 50:
+    legitimate_ips.add(source_ip)
+    logger.info(f"🏷️ WHITELIST: Added {ip} to legitimate IPs")
+
+# Ejemplo: 192.168.1.50 con transferencias constantes
+# Observaciones: 50 transferencias de 15MB/s
+# Clean ratio: 98% (49/50 limpias)
+# Resultado: IP agregada a whitelist
+# Efecto: Futuras transferencias similares NO generan alertas
+```
+
+### **Blacklist Automática**
+```python
+# Si IP whitelisteada genera amenaza, remover inmediatamente
+if threat_detected and source_ip in legitimate_ips:
+    legitimate_ips.remove(source_ip)
+    logger.warning(f"⚠️ BLACKLIST: Removed {ip} due to threat")
+```
+
+### **Criterios de Entrenamiento Conservadores**
+```python
+def is_very_normal_sample(data):
+    return (
+        packets_per_second < 100 and
+        bytes_per_second < 1MB/s and  # Muy conservador
+        unique_ports < 5
+    )
+```
+
 ## 🎯 Interpretación de Alertas
 
 ### **Niveles de Confianza**

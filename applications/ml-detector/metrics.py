@@ -177,6 +177,29 @@ RULE_ENGINE_TRIGGERS = Counter(
     ["engine_type", "rule_name", "confidence_level"]
 )
 
+# Adaptive learning metrics
+LEGITIMATE_IPS_COUNT = Gauge(
+    "ml_detector_legitimate_ips_total",
+    "Number of IPs in the legitimate whitelist"
+)
+
+IP_CLEAN_RATIO = Gauge(
+    "ml_detector_ip_clean_ratio",
+    "Clean behavior ratio per IP address",
+    ["source_ip"]
+)
+
+ADAPTIVE_LEARNING_STATS = Gauge(
+    "ml_detector_adaptive_learning_stats",
+    "Statistics about adaptive learning process",
+    ["metric_type"]
+)
+
+CLEAN_DATA_RATIO = Gauge(
+    "ml_detector_clean_vs_threat_ratio",
+    "Ratio of clean data vs threats over time"
+)
+
 
 def generate_metrics_payload() -> bytes:
     """Return Prometheus metrics considering multiprocess mode if enabled."""

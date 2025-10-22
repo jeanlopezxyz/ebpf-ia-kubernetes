@@ -27,7 +27,8 @@ from constants import (
 from metrics import (
     TRAINING_DATA_QUALITY, TRAINING_WINDOW_SIZE, ADVANCED_MODEL_STATUS,
     MODEL_RETRAIN_COUNT, MODEL_RETRAIN_DURATION, IP_PACKET_COUNT,
-    SUSPICIOUS_IP_ACTIVITY, FEATURE_VALUES
+    SUSPICIOUS_IP_ACTIVITY, FEATURE_VALUES, LEGITIMATE_IPS_COUNT,
+    IP_CLEAN_RATIO, ADAPTIVE_LEARNING_STATS, CLEAN_DATA_RATIO
 )
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,11 @@ class ThreatDetector:
         self.high_confidence_window: Deque[np.ndarray] = deque(maxlen=WINDOW_SIZES["high_confidence"])
         self.all_data_window: Deque[np.ndarray] = deque(maxlen=WINDOW_SIZES["all_data"])
         self.recent_window: Deque[np.ndarray] = deque(maxlen=WINDOW_SIZES["recent"])
+        
+        # Adaptive learning - whitelist for known legitimate IPs/patterns
+        self.legitimate_ips: set = set()
+        self.ip_behavior_history: Dict[str, List[Dict]] = {}
+        self.clean_data_count = 0
         
         # Statistics
         self.high_confidence_count = 0
@@ -113,8 +119,8 @@ class ThreatDetector:
             DetectionResult with threat analysis
         """
         try:
-            # Extract features and add to training
-            features = self.extract_features(data, add_to_training=True)
+            # Extract features but don't add to training yet (wait for threat assessment)
+            features = self.extract_features(data, add_to_training=False)
             
             # Process IP-specific metrics
             attacking_ips = self._identify_attacking_ips(data)
@@ -136,6 +142,9 @@ class ThreatDetector:
                 # Update metrics
                 self._update_threat_metrics(threat_types, max_confidence, attacking_ips)
                 
+                # DO NOT add to training data - this is a detected threat
+                logger.info(f"🚨 THREAT_DETECTED: Not adding to training data - {threat_types}")
+                
                 return DetectionResult(
                     threat_detected=True,
                     confidence=max_confidence,
@@ -144,6 +153,10 @@ class ThreatDetector:
                     detection_type=self._get_detection_type(data),
                     model_scores=self._get_model_scores()
                 )
+            else:
+                # No threats detected - this is clean data, add to training
+                self._add_clean_data_to_training(features, data)
+                logger.info(f"✅ CLEAN_DATA: Adding to training data for model improvement")
             
             return DetectionResult(
                 threat_detected=False,
@@ -396,12 +409,102 @@ class ThreatDetector:
         ADVANCED_MODEL_STATUS.labels(model_name="spatial").set(1.0 if self.spatial_detector.is_trained() else 0.0)
         ADVANCED_MODEL_STATUS.labels(model_name="temporal").set(1.0 if self.temporal_detector.is_trained() else 0.0)
         ADVANCED_MODEL_STATUS.labels(model_name="statistical").set(1.0 if self.statistical_detector.is_trained() else 0.0)
+        
+        # Update adaptive learning metrics
+        LEGITIMATE_IPS_COUNT.set(len(self.legitimate_ips))
+        
+        # Update IP clean ratios
+        for ip, history in self.ip_behavior_history.items():
+            if history:
+                clean_count = sum(1 for obs in history if obs.get("clean", False))
+                clean_ratio_ip = clean_count / len(history)
+                IP_CLEAN_RATIO.labels(source_ip=ip).set(clean_ratio_ip)
+        
+        # Update adaptive learning stats
+        ADAPTIVE_LEARNING_STATS.labels(metric_type="total_ips_tracked").set(len(self.ip_behavior_history))
+        ADAPTIVE_LEARNING_STATS.labels(metric_type="whitelisted_ips").set(len(self.legitimate_ips))
+        ADAPTIVE_LEARNING_STATS.labels(metric_type="clean_data_samples").set(self.clean_data_count)
+        
+        # Clean vs threat ratio
+        threat_count = self.total_samples_count - self.clean_data_count
+        if self.total_samples_count > 0:
+            clean_vs_threat_ratio = self.clean_data_count / self.total_samples_count
+            CLEAN_DATA_RATIO.set(clean_vs_threat_ratio)
+    
+    def _add_clean_data_to_training(self, features: np.ndarray, data: Dict[str, float]) -> None:
+        """Add clean data to training windows with adaptive learning."""
+        with self._lock:
+            source_ip = data.get("source_ip", "unknown")
+            
+            # Track IP behavior history
+            if source_ip != "unknown":
+                if source_ip not in self.ip_behavior_history:
+                    self.ip_behavior_history[source_ip] = []
+                
+                self.ip_behavior_history[source_ip].append({
+                    "timestamp": time.time(),
+                    "data": data.copy(),
+                    "clean": True
+                })
+                
+                # Keep only last 100 observations per IP
+                if len(self.ip_behavior_history[source_ip]) > 100:
+                    self.ip_behavior_history[source_ip] = self.ip_behavior_history[source_ip][-100:]
+                
+                # Auto-whitelist IPs with consistent clean behavior
+                if len(self.ip_behavior_history[source_ip]) >= 50:
+                    clean_count = sum(1 for obs in self.ip_behavior_history[source_ip] if obs.get("clean", False))
+                    clean_ratio = clean_count / len(self.ip_behavior_history[source_ip])
+                    
+                    if clean_ratio > 0.95 and source_ip not in self.legitimate_ips:
+                        self.legitimate_ips.add(source_ip)
+                        logger.info(f"🏷️ WHITELIST: Added {source_ip} to legitimate IPs (clean ratio: {clean_ratio:.2%})")
+            
+            # Add to training windows
+            self.total_samples_count += 1
+            self.clean_data_count += 1
+            self.all_data_window.append(features[0])
+            self.recent_window.append(features[0])
+            
+            # High confidence determination (more sophisticated)
+            if self._is_high_confidence_sample(data) and source_ip in self.legitimate_ips:
+                self.high_confidence_window.append(features[0])
+                self.high_confidence_count += 1
+                logger.info(f"📚 HIGH_CONFIDENCE: Added sample from whitelisted IP {source_ip}")
+            elif self._is_high_confidence_sample(data):
+                # Only add if it looks very normal
+                if self._is_very_normal_sample(data):
+                    self.high_confidence_window.append(features[0])
+                    self.high_confidence_count += 1
+                    logger.info(f"📚 HIGH_CONFIDENCE: Added normal sample from {source_ip}")
+    
+    def _is_very_normal_sample(self, data: Dict[str, float]) -> bool:
+        """More strict criteria for high confidence training data."""
+        pps = data.get("packets_per_second", 0)
+        bps = data.get("bytes_per_second", 0)
+        ports = data.get("unique_ports", 0)
+        
+        # Very conservative thresholds for training
+        return (pps < 100 and 
+                bps < 1_000_000 and  # < 1MB/s
+                ports < 5)
+    
+    def _is_ip_whitelisted(self, source_ip: str) -> bool:
+        """Check if IP is in legitimate whitelist."""
+        return source_ip in self.legitimate_ips
     
     def _update_threat_metrics(self, threat_types: List[str], confidence: float, attacking_ips: List[str]) -> None:
         """Update threat-specific Prometheus metrics."""
-        # This would include all the metric updates from the original detector
-        # Moving to separate metrics handler for cleanliness
-        pass
+        # Mark any IP with threats as NOT legitimate
+        for ip in attacking_ips:
+            if ip in self.legitimate_ips:
+                self.legitimate_ips.remove(ip)
+                logger.warning(f"⚠️ BLACKLIST: Removed {ip} from legitimate IPs due to threat detection")
+            
+            # Update IP behavior history
+            if ip in self.ip_behavior_history:
+                if self.ip_behavior_history[ip]:
+                    self.ip_behavior_history[ip][-1]["clean"] = False
     
     def shutdown(self) -> None:
         """Gracefully shutdown background training and thread pool."""
