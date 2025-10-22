@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: kubesphere
-  namespace: argocd
+  namespace: gitops
   labels:
     app.kubernetes.io/name: kubesphere
     app.kubernetes.io/part-of: ebpf-ai-system

@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/part-of: ebpf-ai-platform
     app.kubernetes.io/component: configuration
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
 spec:
   persistence:
     storageClass: {{ .Values.storage.storageClassName | quote }}
