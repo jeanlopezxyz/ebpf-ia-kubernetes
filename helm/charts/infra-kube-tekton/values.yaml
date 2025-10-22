@@ -2,12 +2,37 @@
 
 # Global configuration
 global:
-  namespace: tekton
-  domain: "example.com"  # Change to your domain
+  namespace: tekton-pipelines
+  domain: "apps.k8s.labjp.xyz"  # Change to your domain
 
 # Enable/disable components
 dashboard:
   enabled: true
+  replicaCount: 1
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+  image:
+    repository: ghcr.io/tektoncd/dashboard
+    tag: "v0.68.2"
+    pullPolicy: IfNotPresent
+  ingressClassName: nginx
+  config:
+    logLevel: info
+    logFormat: text
+    pipelinesNamespace: "tekton-pipelines"
+    triggersNamespace: "tekton-pipelines"
+    readOnly: false
+    logoutUrl: ""
+    namespaces: ""
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
   
 pipelines:
   enabled: true
@@ -17,10 +42,10 @@ triggers:
 
 # External configurations that will be used by upstream installers
 tektonConfig:
-  # These will point to official Tekton releases
-  pipelinesVersion: "v0.62.0"
-  dashboardVersion: "v0.60.0"
-  triggersVersion: "v0.28.1"
+  # These will point to official Tekton releases (latest versions)
+  pipelinesVersion: "v0.68.0"
+  dashboardVersion: "v0.68.2" 
+  triggersVersion: "v0.26.1"
   
   # Generic configurations (update for your environment)
   registry:
@@ -28,7 +53,7 @@ tektonConfig:
     internal_url: "registry.registry.svc.cluster.local:5000"
   
   git:
-    repository: "https://github.com/your-org/your-repo.git"  # Change to your repository
+    repository: "https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git"  # eBPF-AI repository
     branch: "main"
   
   webhook:

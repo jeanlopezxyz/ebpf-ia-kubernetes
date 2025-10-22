@@ -26,13 +26,22 @@ spec:
         - /bin/sh
         - -c
         - |
-          kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/previous/{{ .Values.tektonConfig.pipelinesVersion }}/release.yaml
+          echo "🚀 Installing Tekton Pipelines v{{ .Values.tektonConfig.pipelinesVersion }}"
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/{{ .Values.tektonConfig.pipelinesVersion }}/release.yaml
+          
           {{- if .Values.dashboard.enabled }}
-          kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/previous/{{ .Values.tektonConfig.dashboardVersion }}/release.yaml
+          echo "🎯 Installing Tekton Dashboard v{{ .Values.tektonConfig.dashboardVersion }}"
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/{{ .Values.tektonConfig.dashboardVersion }}/tekton-dashboard-release.yaml
           {{- end }}
+          
           {{- if .Values.triggers.enabled }}
-          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/previous/{{ .Values.tektonConfig.triggersVersion }}/release.yaml
+          echo "🔧 Installing Tekton Triggers v{{ .Values.tektonConfig.triggersVersion }}"
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/{{ .Values.tektonConfig.triggersVersion }}/release.yaml
           {{- end }}
+          
+          echo "✅ Tekton installation completed"
+          echo "📋 Verifying installation..."
+          kubectl get pods -n {{ include "tekton.namespace" . }}
 {{- end }}
 ---
 apiVersion: v1
