@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import logging
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
 from prometheus_client import CollectorRegistry
 
@@ -8,6 +9,9 @@ try:
     from prometheus_client import multiprocess
 except Exception:  # pragma: no cover
     multiprocess = None  # type: ignore
+
+# Setup logging for metrics
+logger = logging.getLogger(__name__)
 
 
 # Core metrics
@@ -176,9 +180,29 @@ RULE_ENGINE_TRIGGERS = Counter(
 
 def generate_metrics_payload() -> bytes:
     """Return Prometheus metrics considering multiprocess mode if enabled."""
-    if os.getenv("PROMETHEUS_MULTIPROC_DIR") and multiprocess is not None:
-        registry = CollectorRegistry()
-        multiprocess.MultiProcessCollector(registry)
-        return generate_latest(registry)
-    return generate_latest()
+    logger.info("📊 PROMETHEUS_METRICS: Generating metrics payload")
+    
+    try:
+        if os.getenv("PROMETHEUS_MULTIPROC_DIR") and multiprocess is not None:
+            logger.info("🔄 MULTIPROCESS_MODE: Using multiprocess collector")
+            registry = CollectorRegistry()
+            multiprocess.MultiProcessCollector(registry)
+            payload = generate_latest(registry)
+            logger.info(f"✅ MULTIPROCESS_PAYLOAD: Generated {len(payload)} bytes")
+            return payload
+        else:
+            logger.info("📈 SINGLE_PROCESS_MODE: Using default collector")
+            payload = generate_latest()
+            logger.info(f"✅ SINGLE_PROCESS_PAYLOAD: Generated {len(payload)} bytes")
+            
+            # Log a sample of metrics for debugging
+            payload_str = payload.decode('utf-8')
+            ml_detector_lines = [line for line in payload_str.split('\n') if 'ml_detector' in line and not line.startswith('#')][:5]
+            if ml_detector_lines:
+                logger.info(f"📊 SAMPLE_METRICS: {ml_detector_lines}")
+            
+            return payload
+    except Exception as e:
+        logger.error(f"❌ METRICS_GENERATION_ERROR: {e}")
+        return b"# Error generating metrics\n"
 

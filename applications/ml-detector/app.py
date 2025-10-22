@@ -29,11 +29,29 @@ def create_app() -> Flask:
         os.getenv("MAX_CONTENT_LENGTH", str(64 * 1024))
     )
 
-    # Logging configuration
+    # Enhanced logging configuration
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO"),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=log_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
+        handlers=[
+            logging.StreamHandler(),  # Console output for Kubernetes logs
+        ]
     )
+    
+    # Set specific logger levels
+    logger = logging.getLogger(__name__)
+    api_logger = logging.getLogger('api')
+    threat_logger = logging.getLogger('threat_detector')
+    
+    # Ensure our loggers are at INFO level for detailed output
+    logger.setLevel(logging.INFO)
+    api_logger.setLevel(logging.INFO)
+    threat_logger.setLevel(logging.INFO)
+    
+    logger.info("🚀 ML DETECTOR: Starting up...")
+    logger.info(f"📊 LOG_LEVEL: {log_level}")
+    logger.info(f"🌐 MAX_CONTENT_LENGTH: {app.config['MAX_CONTENT_LENGTH']} bytes")
 
     # Initialize core threat detection system
     detector = ThreatDetector()
