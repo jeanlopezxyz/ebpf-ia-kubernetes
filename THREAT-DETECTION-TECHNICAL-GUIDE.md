@@ -299,6 +299,185 @@ DETECCIÓN AUTOMÁTICA:
 RESULTADO: ✅ Compromiso detectado en tiempo real
 ```
 
+## 🛡️ Protección Inmediata (Zero-Day)
+
+### **🚨 Problema Crítico Resuelto: Período Vulnerable de Entrenamiento**
+
+**Antes**: Sistema necesitaba 100+ muestras para entrenar → **Ventana de vulnerabilidad**
+**Ahora**: Protección desde el **MINUTO 1** sin entrenamiento requerido
+
+### **Sistema de Protección Híbrido**
+
+#### **FASE 1: Protección Inmediata (Minuto 1)**
+```python
+# Detección sin entrenamiento ML
+immediate_threats = ImmediateThreatEngine.detect(data)
+
+# Umbrales de protección inmediata:
+IMMEDIATE_THREAT_THRESHOLDS = {
+    "unknown_ip_data_exfiltration": {
+        "bytes_per_second": 100_000_000,  # >100MB/s
+        "confidence": 0.95
+    },
+    "unknown_ip_port_scan": {
+        "unique_ports": 50,     # >50 puertos
+        "packets_per_second": 500,  # >500 pps
+        "confidence": 0.90
+    },
+    "unknown_ip_ddos": {
+        "packets_per_second": 2000,  # >2000 pps
+        "bytes_per_second": 50_000_000,  # >50MB/s
+        "confidence": 0.95
+    }
+}
+```
+
+#### **FASE 2: Entrenamiento Progresivo (Después de 100 muestras)**
+```python
+# ML models empiezan a entrenar con datos limpios
+if any_model_trained():
+    ml_threats = detect_with_ml_ensemble(features)
+else:
+    ml_threats = []  # Rely on immediate + rules protection
+```
+
+#### **FASE 3: Protección Completa (Después de entrenamiento)**
+```python
+# Sistema completo: Inmediato + Baseline + ML
+all_threats = immediate_threats + baseline_threats + rule_threats + ml_threats
+```
+
+### **Detección de Usuarios Intrusos**
+
+#### **🔐 Intrusión por Fuerza Bruta**
+```python
+# Detección inmediata sin entrenamiento
+if failed_logins > 20:  # 20+ intentos fallidos
+    threat = "brute_force_intrusion"
+    confidence = 0.85
+```
+
+#### **⚡ Escalación de Privilegios**
+```python  
+# Actividad sospechosa de usuario
+if privilege_escalations > 5:  # 5+ comandos sudo
+    threat = "privilege_escalation_attack"
+    confidence = 0.85
+```
+
+#### **👤 Creación de Usuario No Autorizada**
+```python
+# Altamente sospechoso
+if new_user_created:
+    threat = "unauthorized_user_creation"
+    confidence = 0.80
+```
+
+#### **📁 Acceso a Archivos Sensibles**
+```python
+sensitive_files = ["/etc/passwd", "/etc/shadow", "ssh_config", "authorized_keys"]
+if any(file in accessed_files for file in sensitive_files):
+    threat = "sensitive_file_access"
+    confidence = 0.85
+```
+
+### **Detección de Procesos Maliciosos**
+
+#### **🦹 Herramientas de Ataque Conocidas**
+```python
+malicious_processes = [
+    "mimikatz",    # Credential dumping
+    "psexec",      # Remote execution  
+    "pwdump",      # Password dumping
+    "procdump",    # Process dumping
+    "gsecdump"     # Security dumping
+]
+
+if process_name in malicious_processes:
+    threat = "malicious_process_detected"
+    confidence = 0.95
+```
+
+#### **💻 Patrones de Comando Maliciosos**
+```python
+attack_patterns = [
+    "powershell.*-enc.*",     # PowerShell encoded
+    "cmd.*&.*whoami",         # Command injection
+    "wget.*|.*curl.*",        # Download attempts
+    "nc.*-e.*"                # Reverse shell
+]
+
+if matches_pattern(command, attack_patterns):
+    threat = "malicious_command_detected"
+    confidence = 0.90
+```
+
+### **🕐 Detección de Acceso Fuera de Horario**
+
+#### **Monitoreo 24/7**
+```python
+business_hours = (8, 18)  # 8 AM - 6 PM
+current_hour = datetime.now().hour
+
+if not (8 <= current_hour <= 18) and login_attempts > 0:
+    threat = "off_hours_access"
+    confidence = 0.70
+```
+
+### **Pipeline de Detección Híbrido**
+
+```python
+def hybrid_detection_pipeline(data):
+    # 1. PROTECCIÓN INMEDIATA (SIEMPRE activa)
+    immediate = immediate_threat_engine.detect(data)
+    
+    # 2. DETECCIÓN DE BASELINE (IPs whitelisteadas)
+    baseline = detect_baseline_deviations(data)
+    
+    # 3. REGLAS DETERMINISTAS (Patrones conocidos)
+    rules = detect_with_rules(data)
+    
+    # 4. ML ENSEMBLE (Solo si está entrenado)
+    if ml_models_trained():
+        ml = detect_with_ml_ensemble(data)
+    else:
+        ml = []
+    
+    # PRIORIDAD: Inmediato > Baseline > Reglas > ML
+    return immediate + baseline + rules + ml
+```
+
+### **Ejemplo: Protección desde Minuto 1**
+
+```
+🕐 MINUTO 1: Sistema recién desplegado
+📥 IP desconocida 10.0.0.100 transfiere 200MB/s
+🚨 DETECCIÓN INMEDIATA: "unknown_ip_data_exfiltration" (95% confianza)
+✅ ACCIÓN: Alerta inmediata, sin esperar entrenamiento
+
+🕐 MINUTO 5: Usuario sospechoso
+👤 Usuario 'admin' falla 25 intentos de login
+🚨 DETECCIÓN INMEDIATA: "brute_force_intrusion" (85% confianza)  
+✅ ACCIÓN: Bloqueo inmediato del usuario
+
+🕐 MINUTO 10: Proceso malicioso
+💻 Proceso "mimikatz.exe" detectado
+🚨 DETECCIÓN INMEDIATA: "malicious_process_detected" (95% confianza)
+✅ ACCIÓN: Terminación inmediata del proceso
+
+🕐 HORA 2: ML entrenado
+🧠 Modelos ML listos, protección mejorada
+✅ RESULTADO: Protección inmediata + ML avanzado
+```
+
+### **Beneficios del Sistema Híbrido**
+
+1. **✅ Sin Período Vulnerable**: Protección desde el primer segundo
+2. **🧠 ML Progresivo**: Mejora con el tiempo sin sacrificar seguridad inicial
+3. **👤 Detección de Intrusos**: Usuarios y procesos maliciosos detectados inmediatamente
+4. **🔄 Adaptación Continua**: Aprende patrones legítimos sin perder detección
+5. **⚡ Respuesta Inmediata**: No espera entrenamiento para actuar
+
 ## 🎯 Interpretación de Alertas
 
 ### **Niveles de Confianza**
