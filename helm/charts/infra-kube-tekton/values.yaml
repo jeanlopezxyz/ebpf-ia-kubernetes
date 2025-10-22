@@ -15,7 +15,7 @@ dashboard:
     name: ""
   image:
     repository: ghcr.io/tektoncd/dashboard
-    tag: "v0.68.2"
+    tag: "v0.62.0"
     pullPolicy: IfNotPresent
   ingressClassName: nginx
   config:
@@ -43,9 +43,9 @@ triggers:
 # External configurations that will be used by upstream installers
 tektonConfig:
   # These will point to official Tekton releases (latest versions)
-  pipelinesVersion: "v0.68.0"
-  dashboardVersion: "v0.68.2" 
-  triggersVersion: "v0.26.1"
+  pipelinesVersion: "v1.5.0"
+  dashboardVersion: "v0.62.0" 
+  triggersVersion: "v0.33.0"
   
   # Generic configurations (update for your environment)
   registry:
