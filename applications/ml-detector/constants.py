@@ -10,23 +10,23 @@ from typing import Dict
 # DETECTION THRESHOLDS
 # ==========================================
 
-# Network traffic detection thresholds
+# Network traffic detection thresholds - AJUSTADOS para detección realista
 NETWORK_THRESHOLDS = {
     "port_scan": {
-        "unique_ports": 20,
-        "packets_per_second": 100
+        "unique_ports": 15,        # Reducido de 20 → 15 puertos
+        "packets_per_second": 80   # Reducido de 100 → 80 pps
     },
     "ddos": {
-        "packets_per_second": 1000,
-        "bytes_per_second": 1_000_000
+        "packets_per_second": 800,    # Reducido de 1000 → 800 pps
+        "bytes_per_second": 800_000   # Reducido de 1MB → 800KB/s
     },
     "data_exfiltration": {
-        "bytes_per_second": 5_000_000,
-        "tcp_ratio": 0.9
+        "bytes_per_second": 3_000_000,  # Reducido de 5MB → 3MB/s
+        "tcp_ratio": 0.85               # Reducido de 0.9 → 0.85
     },
     "syn_flood": {
-        "syn_packets": 500,
-        "tcp_ratio": 0.95
+        "syn_packets": 300,   # Reducido de 500 → 300 SYN packets
+        "tcp_ratio": 0.90     # Reducido de 0.95 → 0.90
     }
 }
 
@@ -66,25 +66,25 @@ AUTH_THRESHOLDS = {
     }
 }
 
-# IMMEDIATE PROTECTION - Zero-day detection without training
+# IMMEDIATE PROTECTION - Zero-day detection without training (AJUSTADOS)
 IMMEDIATE_THREAT_THRESHOLDS = {
     "unknown_ip_data_exfiltration": {
-        "bytes_per_second": 100_000_000,  # 100MB/s from unknown IP
+        "bytes_per_second": 20_000_000,  # Reducido de 100MB → 20MB/s from unknown IP
         "confidence": 0.95
     },
     "unknown_ip_port_scan": {
-        "unique_ports": 50,  # 50+ ports from unknown IP
-        "packets_per_second": 500,
+        "unique_ports": 25,  # Reducido de 50 → 25+ ports from unknown IP
+        "packets_per_second": 200,  # Reducido de 500 → 200 pps
         "confidence": 0.90
     },
     "unknown_ip_ddos": {
-        "packets_per_second": 2000,  # 2000+ pps from unknown IP
-        "bytes_per_second": 50_000_000,  # 50MB/s
+        "packets_per_second": 1000,  # Reducido de 2000 → 1000+ pps from unknown IP
+        "bytes_per_second": 15_000_000,  # Reducido de 50MB → 15MB/s
         "confidence": 0.95
     },
     "suspicious_user_activity": {
-        "failed_logins": 20,  # 20+ failed logins in 5 min
-        "privilege_escalations": 5,  # 5+ sudo commands in 5 min
+        "failed_logins": 15,  # Reducido de 20 → 15+ failed logins in 5 min
+        "privilege_escalations": 4,  # Reducido de 5 → 4+ sudo commands in 5 min
         "confidence": 0.85
     },
     "intrusion_indicators": {
