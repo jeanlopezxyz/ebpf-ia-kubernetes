@@ -28,7 +28,9 @@ from metrics import (
     TRAINING_DATA_QUALITY, TRAINING_WINDOW_SIZE, ADVANCED_MODEL_STATUS,
     MODEL_RETRAIN_COUNT, MODEL_RETRAIN_DURATION, IP_PACKET_COUNT,
     SUSPICIOUS_IP_ACTIVITY, FEATURE_VALUES, LEGITIMATE_IPS_COUNT,
-    IP_CLEAN_RATIO, ADAPTIVE_LEARNING_STATS, CLEAN_DATA_RATIO
+    IP_CLEAN_RATIO, ADAPTIVE_LEARNING_STATS, CLEAN_DATA_RATIO,
+    IP_BASELINE_DEVIATIONS, IP_CONFIDENCE_SCORE, BASELINE_Z_SCORES,
+    WHITELISTED_IP_STATUS
 )
 
 logger = logging.getLogger(__name__)
@@ -60,6 +62,11 @@ class ThreatDetector:
         self.legitimate_ips: set = set()
         self.ip_behavior_history: Dict[str, List[Dict]] = {}
         self.clean_data_count = 0
+        
+        # Baseline behavior monitoring for whitelisted IPs
+        self.ip_baselines: Dict[str, Dict[str, float]] = {}
+        self.ip_confidence_scores: Dict[str, float] = {}  # Confidence in whitelist status
+        self.anomaly_threshold = 2.0  # Standard deviations for anomaly detection
         
         # Statistics
         self.high_confidence_count = 0
@@ -126,14 +133,23 @@ class ThreatDetector:
             attacking_ips = self._identify_attacking_ips(data)
             self._update_ip_metrics(data)
             
+            # Check for baseline deviations in whitelisted IPs FIRST
+            baseline_threats = self._detect_baseline_deviations(data)
+            
             # Rule-based detection (fast) - select appropriate engine
             rule_threats = self._detect_with_rules(data)
             
-            # ML-based detection (comprehensive)
-            ml_threats = self._detect_with_ml_ensemble(features)
+            # ML-based detection (comprehensive) - but skip if IP is whitelisted AND within baseline
+            source_ip = data.get("source_ip", "unknown")
+            if source_ip in self.legitimate_ips and not baseline_threats:
+                # IP is whitelisted and behaving normally - skip ML detection
+                ml_threats = []
+                logger.info(f"🏷️ WHITELIST_BYPASS: Skipping ML detection for legitimate IP {source_ip}")
+            else:
+                ml_threats = self._detect_with_ml_ensemble(features)
             
-            # Combine results
-            all_threats = rule_threats + ml_threats
+            # Combine results - baseline threats have HIGHEST priority
+            all_threats = baseline_threats + rule_threats + ml_threats
             
             if all_threats:
                 max_confidence = max(threat[1] for threat in all_threats)
@@ -430,6 +446,17 @@ class ThreatDetector:
         if self.total_samples_count > 0:
             clean_vs_threat_ratio = self.clean_data_count / self.total_samples_count
             CLEAN_DATA_RATIO.set(clean_vs_threat_ratio)
+        
+        # Update IP confidence scores and status
+        for ip in self.legitimate_ips:
+            if ip in self.ip_confidence_scores:
+                IP_CONFIDENCE_SCORE.labels(source_ip=ip).set(self.ip_confidence_scores[ip])
+                WHITELISTED_IP_STATUS.labels(source_ip=ip, reason="active").set(1)
+        
+        # Mark removed IPs as inactive
+        for ip in list(self.ip_confidence_scores.keys()):
+            if ip not in self.legitimate_ips:
+                WHITELISTED_IP_STATUS.labels(source_ip=ip, reason="removed").set(0)
     
     def _add_clean_data_to_training(self, features: np.ndarray, data: Dict[str, float]) -> None:
         """Add clean data to training windows with adaptive learning."""
@@ -458,7 +485,14 @@ class ThreatDetector:
                     
                     if clean_ratio > 0.95 and source_ip not in self.legitimate_ips:
                         self.legitimate_ips.add(source_ip)
+                        self.ip_confidence_scores[source_ip] = clean_ratio
+                        # Calculate baseline behavior for new whitelisted IP
+                        self._calculate_ip_baseline(source_ip)
                         logger.info(f"🏷️ WHITELIST: Added {source_ip} to legitimate IPs (clean ratio: {clean_ratio:.2%})")
+                
+                # Update baseline for existing whitelisted IPs
+                if source_ip in self.legitimate_ips:
+                    self._update_ip_baseline(source_ip, data)
             
             # Add to training windows
             self.total_samples_count += 1
@@ -505,6 +539,148 @@ class ThreatDetector:
             if ip in self.ip_behavior_history:
                 if self.ip_behavior_history[ip]:
                     self.ip_behavior_history[ip][-1]["clean"] = False
+                    
+            # Degrade confidence in whitelisted IPs that show threats
+            if ip in self.ip_confidence_scores:
+                self.ip_confidence_scores[ip] *= 0.8  # Reduce confidence by 20%
+                logger.warning(f"📉 CONFIDENCE_DEGRADED: {ip} confidence reduced to {self.ip_confidence_scores[ip]:.2%}")
+                
+                # Remove from whitelist if confidence drops too low
+                if self.ip_confidence_scores[ip] < 0.7:
+                    self.legitimate_ips.remove(ip)
+                    del self.ip_confidence_scores[ip]
+                    if ip in self.ip_baselines:
+                        del self.ip_baselines[ip]
+                    logger.warning(f"🚫 WHITELIST_REMOVED: {ip} removed due to low confidence")
+    
+    def _detect_baseline_deviations(self, data: Dict[str, float]) -> List[Tuple[str, float]]:
+        """Detect if whitelisted IP is deviating from its established baseline behavior."""
+        source_ip = data.get("source_ip", "unknown")
+        threats = []
+        
+        if source_ip not in self.legitimate_ips or source_ip not in self.ip_baselines:
+            return threats
+        
+        baseline = self.ip_baselines[source_ip]
+        current_metrics = {
+            "bytes_per_second": data.get("bytes_per_second", 0),
+            "packets_per_second": data.get("packets_per_second", 0),
+            "unique_ports": data.get("unique_ports", 0),
+            "tcp_packets": data.get("tcp_packets", 0),
+            "udp_packets": data.get("udp_packets", 0)
+        }
+        
+        significant_deviations = []
+        
+        for metric, current_value in current_metrics.items():
+            if metric in baseline:
+                baseline_mean = baseline[metric]["mean"]
+                baseline_std = baseline[metric]["std"]
+                
+                if baseline_std > 0:  # Avoid division by zero
+                    z_score = abs(current_value - baseline_mean) / baseline_std
+                    
+                    if z_score > self.anomaly_threshold:
+                        deviation_severity = "critical" if z_score > 4 else "high" if z_score > 3 else "medium"
+                        significant_deviations.append({
+                            "metric": metric,
+                            "z_score": z_score,
+                            "current": current_value,
+                            "baseline_mean": baseline_mean,
+                            "severity": deviation_severity
+                        })
+                        
+                        # Update metrics
+                        IP_BASELINE_DEVIATIONS.labels(
+                            source_ip=source_ip,
+                            metric=metric,
+                            severity=deviation_severity
+                        ).inc()
+                        
+                        BASELINE_Z_SCORES.labels(
+                            source_ip=source_ip,
+                            metric=metric
+                        ).set(z_score)
+                        
+                        logger.warning(f"📊 BASELINE_DEVIATION: {source_ip} {metric} = {current_value:.1f} "
+                                     f"(baseline: {baseline_mean:.1f}±{baseline_std:.1f}, z-score: {z_score:.2f})")
+        
+        # Generate threats based on significant deviations
+        if significant_deviations:
+            max_z_score = max(d["z_score"] for d in significant_deviations)
+            confidence = min(0.95, 0.7 + (max_z_score - 2) * 0.1)  # 70-95% confidence based on z-score
+            
+            # Specific threat based on which metrics deviated
+            bytes_deviation = any(d["metric"] == "bytes_per_second" for d in significant_deviations)
+            ports_deviation = any(d["metric"] == "unique_ports" for d in significant_deviations)
+            
+            if bytes_deviation and any(d["current"] > d["baseline_mean"] * 3 for d in significant_deviations):
+                threats.append(("baseline_data_exfiltration", confidence))
+                logger.error(f"🚨 BASELINE_THREAT: {source_ip} showing unusual data transfer patterns (possible compromise)")
+            elif ports_deviation:
+                threats.append(("baseline_port_scanning", confidence))
+                logger.error(f"🚨 BASELINE_THREAT: {source_ip} showing unusual port access patterns (possible compromise)")
+            else:
+                threats.append(("baseline_anomaly", confidence))
+                logger.warning(f"⚠️ BASELINE_ANOMALY: {source_ip} deviating from normal behavior")
+                
+            # Degrade confidence in this IP
+            if source_ip in self.ip_confidence_scores:
+                degradation = min(0.3, max_z_score * 0.05)  # 5-30% degradation based on severity
+                self.ip_confidence_scores[source_ip] *= (1 - degradation)
+                logger.warning(f"📉 CONFIDENCE_DEGRADED: {source_ip} confidence reduced to {self.ip_confidence_scores[source_ip]:.2%}")
+        
+        return threats
+    
+    def _calculate_ip_baseline(self, source_ip: str) -> None:
+        """Calculate baseline behavior statistics for a newly whitelisted IP."""
+        if source_ip not in self.ip_behavior_history:
+            return
+        
+        history = self.ip_behavior_history[source_ip]
+        clean_observations = [obs for obs in history if obs.get("clean", False)]
+        
+        if len(clean_observations) < 10:
+            return
+        
+        metrics = ["bytes_per_second", "packets_per_second", "unique_ports", "tcp_packets", "udp_packets"]
+        baseline = {}
+        
+        for metric in metrics:
+            values = [obs["data"].get(metric, 0) for obs in clean_observations if metric in obs["data"]]
+            if values:
+                import numpy as np
+                baseline[metric] = {
+                    "mean": np.mean(values),
+                    "std": np.std(values),
+                    "min": np.min(values),
+                    "max": np.max(values),
+                    "count": len(values)
+                }
+        
+        self.ip_baselines[source_ip] = baseline
+        logger.info(f"📊 BASELINE_CALCULATED: {source_ip} baseline established with {len(clean_observations)} observations")
+        
+        # Log baseline summary
+        for metric, stats in baseline.items():
+            logger.info(f"   {metric}: {stats['mean']:.1f}±{stats['std']:.1f} (range: {stats['min']:.1f}-{stats['max']:.1f})")
+    
+    def _update_ip_baseline(self, source_ip: str, data: Dict[str, float]) -> None:
+        """Update baseline statistics with new clean observation (rolling average)."""
+        if source_ip not in self.ip_baselines:
+            return
+        
+        baseline = self.ip_baselines[source_ip]
+        alpha = 0.1  # Learning rate for rolling average
+        
+        for metric in ["bytes_per_second", "packets_per_second", "unique_ports", "tcp_packets", "udp_packets"]:
+            if metric in data and metric in baseline:
+                current_value = data[metric]
+                # Update rolling mean and std
+                old_mean = baseline[metric]["mean"]
+                baseline[metric]["mean"] = old_mean + alpha * (current_value - old_mean)
+                # Simple std update (not perfectly accurate but computationally efficient)
+                baseline[metric]["std"] = baseline[metric]["std"] * 0.95 + abs(current_value - old_mean) * 0.05
     
     def shutdown(self) -> None:
         """Gracefully shutdown background training and thread pool."""

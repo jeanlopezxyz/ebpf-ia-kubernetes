@@ -200,6 +200,31 @@ CLEAN_DATA_RATIO = Gauge(
     "Ratio of clean data vs threats over time"
 )
 
+# Baseline monitoring metrics
+IP_BASELINE_DEVIATIONS = Counter(
+    "ml_detector_baseline_deviations_total",
+    "Number of baseline deviations detected per IP",
+    ["source_ip", "metric", "severity"]
+)
+
+IP_CONFIDENCE_SCORE = Gauge(
+    "ml_detector_ip_confidence_score",
+    "Confidence score for whitelisted IPs (0-1)",
+    ["source_ip"]
+)
+
+BASELINE_Z_SCORES = Gauge(
+    "ml_detector_baseline_z_scores",
+    "Current Z-scores for metrics vs baseline",
+    ["source_ip", "metric"]
+)
+
+WHITELISTED_IP_STATUS = Gauge(
+    "ml_detector_whitelisted_ip_status",
+    "Status of whitelisted IPs (1=active, 0=removed)",
+    ["source_ip", "reason"]
+)
+
 
 def generate_metrics_payload() -> bytes:
     """Return Prometheus metrics considering multiprocess mode if enabled."""

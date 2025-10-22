@@ -641,6 +641,136 @@
         ]
       },
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 76}
+    },
+    {
+      "id": 21,
+      "title": "⚠️ Baseline Deviations (Compromised IPs)",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "topk(20, increase(ml_detector_baseline_deviations_total[5m]))",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "displayMode": "list",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 1},
+              {"color": "orange", "value": 3},
+              {"color": "red", "value": 5}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "source_ip"},
+            "properties": [
+              {"id": "displayName", "value": "🚨 Compromised IP"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "metric"},
+            "properties": [
+              {"id": "displayName", "value": "📊 Metric"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "severity"},
+            "properties": [
+              {"id": "displayName", "value": "⚠️ Severity"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Value"},
+            "properties": [
+              {"id": "displayName", "value": "🔢 Deviations (5min)"}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 84}
+    },
+    {
+      "id": 22,
+      "title": "📊 IP Confidence Scores",
+      "type": "bargauge",
+      "targets": [
+        {
+          "expr": "ml_detector_ip_confidence_score",
+          "refId": "A",
+          "legendFormat": "{{source_ip}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "orange", "value": 0.7},
+              {"color": "yellow", "value": 0.85},
+              {"color": "green", "value": 0.95}
+            ]
+          },
+          "unit": "percentunit",
+          "displayName": "Confidence",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 84}
+    },
+    {
+      "id": 23,
+      "title": "📈 Real-time Z-Scores (Baseline Monitoring)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "ml_detector_baseline_z_scores",
+          "refId": "A",
+          "legendFormat": "{{source_ip}} - {{metric}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5,
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "unit": "short",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 2},
+              {"color": "orange", "value": 3},
+              {"color": "red", "value": 4}
+            ]
+          }
+        }
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 94}
     }
   ]
 }

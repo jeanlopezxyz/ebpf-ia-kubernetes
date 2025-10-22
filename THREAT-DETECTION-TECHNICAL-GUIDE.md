@@ -237,6 +237,68 @@ def is_very_normal_sample(data):
     )
 ```
 
+### **🚨 Monitoreo de Baseline para IPs Comprometidas**
+
+#### **Problema Crítico Resuelto**
+¿Qué pasa si una IP whitelisteada (192.168.1.50) es **comprometida** y comienza a descargar gigas anormalmente?
+
+#### **Solución: Baseline Deviation Detection**
+```python
+# Baseline calculado para 192.168.1.50:
+baseline = {
+    "bytes_per_second": {
+        "mean": 15_000_000,  # 15MB/s normal
+        "std": 2_000_000     # ±2MB/s variación normal
+    }
+}
+
+# Comportamiento comprometido detectado:
+current_bytes = 500_000_000  # 500MB/s !!!
+z_score = abs(500_000_000 - 15_000_000) / 2_000_000 = 242.5
+
+# Resultado: z_score > 4 → CRITICAL baseline deviation
+# Alerta: "baseline_data_exfiltration" con 95% confianza
+```
+
+#### **Sistema de Degradación de Confianza**
+```python
+# IP comprometida pierde confianza automáticamente
+if baseline_deviation_detected:
+    ip_confidence_scores[source_ip] *= 0.8  # -20% confianza
+    
+# Si confianza < 70%, remover de whitelist
+if confidence < 0.7:
+    legitimate_ips.remove(source_ip)
+    logger.warning("🚫 IP removed due to suspicious behavior change")
+```
+
+#### **Detección Multi-Nivel**
+1. **Baseline Normal**: `bytes_per_second = 15MB/s ± 2MB/s`
+2. **Comportamiento Sospechoso**: `bytes_per_second = 50MB/s` (z-score: 17.5)
+3. **Compromiso Detectado**: `bytes_per_second = 500MB/s` (z-score: 242.5)
+
+#### **Escenario Real: IP 192.168.1.50 Comprometida**
+```
+FASE 1 - Comportamiento Normal (Días 1-30):
+- bytes_per_second: 13-17 MB/s
+- packets_per_second: 80-120 pps  
+- unique_ports: 2-4 puertos
+- Status: ✅ Whitelisted (confidence: 98%)
+
+FASE 2 - Compromiso (Día 31):
+- bytes_per_second: 500 MB/s (!!)
+- packets_per_second: 5000 pps (!!)
+- unique_ports: 50 puertos (!!)
+
+DETECCIÓN AUTOMÁTICA:
+🚨 BASELINE_THREAT: 192.168.1.50 showing unusual data transfer patterns
+📊 BASELINE_DEVIATION: bytes_per_second z-score: 242.5 (CRITICAL)
+📉 CONFIDENCE_DEGRADED: confidence reduced to 78%
+🚫 WHITELIST_REMOVED: IP removed due to low confidence
+
+RESULTADO: ✅ Compromiso detectado en tiempo real
+```
+
 ## 🎯 Interpretación de Alertas
 
 ### **Niveles de Confianza**
