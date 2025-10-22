@@ -1,0 +1,236 @@
+# KubeSphere Configuration for eBPF-AI Platform
+
+# Global configuration
+global:
+  domain: "apps.k8s.labjp.xyz"
+
+# KubeSphere Configuration
+kubesphere:
+    # Basic installation
+    jwtSecret: ""  # Auto-generated if empty
+    
+    # Console configuration
+    console:
+      enableMultiLogin: true  # Allow multiple concurrent logins
+      port: 30880
+      type: NodePort
+    
+    # Authentication configuration
+    authentication:
+      authenticateRateLimiterMaxTries: 10
+      authenticateRateLimiterDuration: 10m0s
+      loginHistoryRetentionPeriod: 168h
+      maximumClockSkew: 10s
+      multipleLogin: true
+      jwtSecret: ""  # Auto-generated if empty
+      oauthOptions:
+        accessTokenMaxAge: 1h
+        accessTokenInactivityTimeout: 30m
+        identityProviders: []
+        
+    # Common components
+    common:
+      core:
+        console:
+          enableMultiLogin: true
+          port: 30880
+          type: NodePort
+      redis:
+        enabled: true
+        enableHA: false
+        volumeSize: 2Gi
+      openldap:
+        enabled: false  # Disable LDAP for lab environment
+      minio:
+        enabled: true
+        volumeSize: 20Gi
+      monitoring:
+        endpoint: http://prometheus-server.prometheus.svc.cluster.local:80
+        GPUMonitoring:
+          enabled: false
+      gpu:
+        kinds:         
+        - resourceName: "nvidia.com/gpu"
+          resourceType: "GPU"
+          default: true
+      es:
+        logMaxAge: 7
+        elkPrefix: logstash
+        basicAuth:
+          enabled: false
+        externalElasticsearchHost: ""
+        externalElasticsearchPort: ""
+        
+    # Alerting and notification
+    alerting:
+      enabled: true
+    notification:
+      enabled: true
+    
+    # DevOps configuration
+    devops:
+      enabled: true
+      jenkinsMemoryLim: 8Gi
+      jenkinsMemoryReq: 4Gi
+      jenkinsVolumeSize: 16Gi
+      
+    # Logging configuration
+    logging:
+      enabled: true
+      logsidecar:
+        enabled: true
+        replicas: 2
+        
+    # Metrics server
+    metrics_server:
+      enabled: true
+      
+    # Monitoring configuration (integrate with existing Prometheus)
+    monitoring:
+      storageClass: "local-path"
+      prometheusMemoryRequest: 400Mi
+      prometheusVolumeSize: 20Gi
+      
+    # Network policies
+    networkpolicy:
+      enabled: false  # Disable for lab environment
+      
+    # Multi-cluster configuration
+    multicluster:
+      clusterRole: none  # none, host, or member
+      
+    # Openpitrix application store
+    openpitrix:
+      store:
+        enabled: true
+        
+    # Service mesh (disable Istio, use Cilium)
+    servicemesh:
+      enabled: false
+      istio:
+        components:
+          ingressGateways:
+          - enabled: false
+          cni:
+            enabled: false
+            
+    # Storage configuration
+    persistence:
+      storageClass: "local-path"
+      
+    # Resource limits
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+
+# Exposure configuration - choose Gateway API or Ingress
+exposure:
+  # Method: "gateway" for Gateway API, "ingress" for traditional Ingress
+  method: "ingress"  # Change to "gateway" if your cluster supports Gateway API
+
+# Gateway API configuration (when exposure.method = "gateway")
+gateway:
+  # Gateway reference (must exist in cluster)
+  gatewayRef:
+    name: "main-gateway"          # Change to your Gateway name
+    namespace: "gateway-system"   # Change to your Gateway namespace
+  
+  # HTTPRoute configuration
+  httpRoute:
+    hostname: "kubesphere.{{ .Values.global.domain }}"
+    path: "/"
+    pathType: "PathPrefix"
+    
+    # Backend service (KubeSphere console service name)
+    backend:
+      serviceName: "ks-console"
+      servicePort: 80
+      weight: 100
+
+# Ingress configuration (when exposure.method = "ingress")
+ingress:
+  enabled: true  # Will be conditional in template
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+  hosts:
+    - host: "kubesphere.apps.k8s.labjp.xyz"  # Fixed domain
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            name: ks-console
+            port: 80
+  tls: []
+
+# Storage configuration
+storage:
+  # Use existing storage class
+  storageClassName: "local-path"
+  
+  # Volume sizes
+  volumes:
+    redis: 2Gi
+    minio: 20Gi
+    prometheus: 20Gi
+    jenkins: 16Gi
+    logging: 20Gi
+
+# Security configuration
+security:
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+    
+  # Security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+    runAsNonRoot: true
+    runAsUser: 1000
+
+# Integration with existing monitoring stack
+integration:
+  prometheus:
+    # Use existing Prometheus instance
+    external: true
+    endpoint: "http://prometheus-server.prometheus.svc.cluster.local:80"
+    
+  grafana:
+    # Use existing Grafana instance
+    external: true
+    endpoint: "http://grafana.grafana.svc.cluster.local:3000"
+    
+  alertmanager:
+    # Use existing AlertManager if available
+    external: false
+    endpoint: ""
+
+# Resource limits for KubeSphere components
+resources:
+  installer:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 100Mi
+      
+  console:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 100Mi

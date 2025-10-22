@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubesphere-system
+  labels:
+    app.kubernetes.io/name: kubesphere
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: ebpf-ai-platform
+    app.kubernetes.io/component: platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubesphere-controls-system
+  labels:
+    app.kubernetes.io/name: kubesphere
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: ebpf-ai-platform
+    app.kubernetes.io/component: platform

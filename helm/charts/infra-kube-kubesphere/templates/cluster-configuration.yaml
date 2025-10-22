@@ -1,0 +1,107 @@
+apiVersion: installer.kubesphere.io/v1alpha1
+kind: ClusterConfiguration
+metadata:
+  name: ks-installer
+  namespace: kubesphere-system
+  labels:
+    app.kubernetes.io/name: kubesphere
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: ebpf-ai-platform
+    app.kubernetes.io/component: configuration
+spec:
+  persistence:
+    storageClass: {{ .Values.storage.storageClassName | quote }}
+  authentication:
+    jwtSecret: {{ .Values.kubesphere.authentication.jwtSecret | quote }}
+    authenticateRateLimiterMaxTries: {{ .Values.kubesphere.authentication.authenticateRateLimiterMaxTries }}
+    authenticateRateLimiterDuration: {{ .Values.kubesphere.authentication.authenticateRateLimiterDuration | quote }}
+    loginHistoryRetentionPeriod: {{ .Values.kubesphere.authentication.loginHistoryRetentionPeriod | quote }}
+    maximumClockSkew: {{ .Values.kubesphere.authentication.maximumClockSkew | quote }}
+    multipleLogin: {{ .Values.kubesphere.authentication.multipleLogin }}
+    oauthOptions:
+      accessTokenMaxAge: {{ .Values.kubesphere.authentication.oauthOptions.accessTokenMaxAge | quote }}
+      accessTokenInactivityTimeout: {{ .Values.kubesphere.authentication.oauthOptions.accessTokenInactivityTimeout | quote }}
+      identityProviders: {{ toYaml .Values.kubesphere.authentication.oauthOptions.identityProviders | nindent 8 }}
+  local_registry: ""
+  namespace_override: ""
+  # etcd monitoring configuration
+  etcd:
+    monitoring: false
+    endpointIps: localhost
+    port: 2379
+    tlsEnable: true
+  common:
+    core:
+      console:
+        enableMultiLogin: {{ .Values.kubesphere.common.core.console.enableMultiLogin }}
+        port: {{ .Values.kubesphere.common.core.console.port }}
+        type: {{ .Values.kubesphere.common.core.console.type | quote }}
+    # Redis configuration
+    redis:
+      enabled: {{ .Values.kubesphere.common.redis.enabled }}
+      enableHA: {{ .Values.kubesphere.common.redis.enableHA }}
+      volumeSize: {{ .Values.kubesphere.common.redis.volumeSize | quote }}
+    # MinIO configuration
+    minio:
+      enabled: {{ .Values.kubesphere.common.minio.enabled }}
+      volumeSize: {{ .Values.kubesphere.common.minio.volumeSize | quote }}
+    # OpenLDAP configuration
+    openldap:
+      enabled: {{ .Values.kubesphere.common.openldap.enabled }}
+    # Monitoring configuration
+    monitoring:
+      endpoint: {{ .Values.kubesphere.common.monitoring.endpoint | quote }}
+      GPUMonitoring:
+        enabled: {{ .Values.kubesphere.common.monitoring.GPUMonitoring.enabled }}
+    gpu:
+      kinds: {{ toYaml .Values.kubesphere.common.gpu.kinds | nindent 8 }}
+    es:
+      logMaxAge: {{ .Values.kubesphere.common.es.logMaxAge }}
+      elkPrefix: {{ .Values.kubesphere.common.es.elkPrefix | quote }}
+      basicAuth:
+        enabled: {{ .Values.kubesphere.common.es.basicAuth.enabled }}
+  # Alerting configuration
+  alerting:
+    enabled: {{ .Values.kubesphere.alerting.enabled }}
+  # Notification configuration
+  notification:
+    enabled: {{ .Values.kubesphere.notification.enabled }}
+  # DevOps configuration
+  devops:
+    enabled: {{ .Values.kubesphere.devops.enabled }}
+    jenkinsMemoryLim: {{ .Values.kubesphere.devops.jenkinsMemoryLim | quote }}
+    jenkinsMemoryReq: {{ .Values.kubesphere.devops.jenkinsMemoryReq | quote }}
+    jenkinsVolumeSize: {{ .Values.kubesphere.devops.jenkinsVolumeSize | quote }}
+  # Logging configuration
+  logging:
+    enabled: {{ .Values.kubesphere.logging.enabled }}
+    logsidecar:
+      enabled: {{ .Values.kubesphere.logging.logsidecar.enabled }}
+      replicas: {{ .Values.kubesphere.logging.logsidecar.replicas }}
+  # Metrics server configuration
+  metrics_server:
+    enabled: {{ .Values.kubesphere.metrics_server.enabled }}
+  # Monitoring configuration
+  monitoring:
+    storageClass: {{ .Values.kubesphere.monitoring.storageClass | quote }}
+    prometheusMemoryRequest: {{ .Values.kubesphere.monitoring.prometheusMemoryRequest | quote }}
+    prometheusVolumeSize: {{ .Values.kubesphere.monitoring.prometheusVolumeSize | quote }}
+  # Multi-cluster configuration
+  multicluster:
+    clusterRole: {{ .Values.kubesphere.multicluster.clusterRole | quote }}
+  # Network policy configuration
+  network:
+    networkpolicy:
+      enabled: {{ .Values.kubesphere.networkpolicy.enabled }}
+  # OpenPitrix configuration
+  openpitrix:
+    store:
+      enabled: {{ .Values.kubesphere.openpitrix.store.enabled }}
+  # Service mesh configuration
+  servicemesh:
+    enabled: {{ .Values.kubesphere.servicemesh.enabled }}
+    istio:
+      components:
+        ingressGateways: {{ toYaml .Values.kubesphere.servicemesh.istio.components.ingressGateways | nindent 10 }}
+        cni:
+          enabled: {{ .Values.kubesphere.servicemesh.istio.components.cni.enabled }}

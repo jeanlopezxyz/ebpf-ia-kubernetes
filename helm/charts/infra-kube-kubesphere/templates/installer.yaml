@@ -1,0 +1,225 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ks-installer
+  namespace: kubesphere-system
+  labels:
+    app.kubernetes.io/name: kubesphere
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: ebpf-ai-platform
+    app.kubernetes.io/component: installer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ks-installer
+  labels:
+    app.kubernetes.io/name: kubesphere
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: ebpf-ai-platform
+    app.kubernetes.io/component: installer
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - apps
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - extensions
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - batch
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - apiregistration.k8s.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - tenant.kubesphere.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - autoscaling
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - aspen.citrix.com
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - config.istio.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - install.istio.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - jaegertracing.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - logging.coreos.com
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - metrics.k8s.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - networking.istio.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - security.istio.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - policy
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - installer.kubesphere.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ks-installer
+  labels:
+    app.kubernetes.io/name: kubesphere
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: ebpf-ai-platform
+    app.kubernetes.io/component: installer
+subjects:
+- kind: ServiceAccount
+  name: ks-installer
+  namespace: kubesphere-system
+roleRef:
+  kind: ClusterRole
+  name: ks-installer
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ks-installer
+  namespace: kubesphere-system
+  labels:
+    app: ks-installer
+    app.kubernetes.io/name: kubesphere
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: ebpf-ai-platform
+    app.kubernetes.io/component: installer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ks-installer
+  template:
+    metadata:
+      labels:
+        app: ks-installer
+    spec:
+      serviceAccountName: ks-installer
+      securityContext:
+        {{- toYaml .Values.security.podSecurityContext | nindent 8 }}
+      containers:
+      - name: installer
+        image: kubesphere/ks-installer:v3.4.1
+        imagePullPolicy: Always
+        securityContext:
+          {{- toYaml .Values.security.securityContext | nindent 10 }}
+        resources:
+          {{- toYaml .Values.resources.installer | nindent 10 }}
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: host-time
+          readOnly: true
+      volumes:
+      - hostPath:
+          path: /etc/localtime
+          type: ""
+        name: host-time

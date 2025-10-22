@@ -1,0 +1,27 @@
+apiVersion: v2
+name: infra-kube-kubesphere
+description: KubeSphere multi-tenant container platform for eBPF-AI platform
+type: application
+version: 1.0.0
+appVersion: "v3.4.1"
+icon: https://kubesphere.io/images/kubesphere-logo.png
+kubeVersion: ">=1.20.0-0"
+keywords:
+  - kubesphere
+  - container-platform
+  - multi-tenant
+  - devops
+  - observability
+  - ebpf
+  - ai
+home: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes
+sources:
+  - https://github.com/kubesphere/kubesphere
+  - https://github.com/kubesphere/ks-installer
+maintainers:
+  - name: eBPF AI Team
+    email: team@ebpf-ai.local
+# No external dependencies - using direct YAML manifests
+annotations:
+  artifacthub.io/category: platform
+  artifacthub.io/keywords: kubesphere,platform,devops,multi-tenant,observability

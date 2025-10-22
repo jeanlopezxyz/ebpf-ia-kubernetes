@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubesphere
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: kubesphere
+    app.kubernetes.io/part-of: ebpf-ai-system
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/jeanlopezxyz/ebpf-ia-kubernetes.git
+    targetRevision: main
+    path: helm/charts/infra-kube-kubesphere
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubesphere-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  info:
+    - name: Description
+      value: KubeSphere multi-tenant container platform for eBPF-AI
+    - name: URL
+      value: https://kubesphere.apps.k8s.labjp.xyz
+    - name: Dependencies
+      value: Requires storage class and ingress controller
