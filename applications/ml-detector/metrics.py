@@ -148,6 +148,31 @@ CLUSTER_ANOMALY_DETECTED = Counter(
     ["cluster_type", "source_ip"]
 )
 
+# Detection reasoning metrics for dashboard explanations
+DETECTION_REASON = Counter(
+    "ml_detector_detection_reason_total",
+    "Detailed reasons why threats were detected",
+    ["threat_type", "reason", "threshold_exceeded", "source_ip"]
+)
+
+FEATURE_THRESHOLD_VIOLATIONS = Counter(
+    "ml_detector_threshold_violations_total",
+    "Feature values that exceeded detection thresholds",
+    ["feature_name", "threat_type", "violation_severity"]
+)
+
+MODEL_DECISION_BREAKDOWN = Gauge(
+    "ml_detector_model_decision_breakdown",
+    "Individual model scores for current detection",
+    ["model_name", "threat_type"]
+)
+
+RULE_ENGINE_TRIGGERS = Counter(
+    "ml_detector_rule_triggers_total",
+    "Which rule engines triggered detections",
+    ["engine_type", "rule_name", "confidence_level"]
+)
+
 
 def generate_metrics_payload() -> bytes:
     """Return Prometheus metrics considering multiprocess mode if enabled."""

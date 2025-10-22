@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple
 
 from models.base import BaseRuleEngine
 from constants import NETWORK_THRESHOLDS, QOS_THRESHOLDS, THREAT_CONFIDENCE_MAPPING
+from metrics import DETECTION_REASON, FEATURE_THRESHOLD_VIOLATIONS, RULE_ENGINE_TRIGGERS
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +46,31 @@ class NetworkRuleEngine(BaseRuleEngine):
         """Detect port scanning attempts."""
         unique_ports = data.get("unique_ports", 0)
         pps = data.get("packets_per_second", 0)
+        source_ip = data.get("source_ip", "unknown")
         
         if (unique_ports > NETWORK_THRESHOLDS["port_scan"]["unique_ports"] and
             pps > NETWORK_THRESHOLDS["port_scan"]["packets_per_second"]):
+            
+            # Log detection reasoning
+            DETECTION_REASON.labels(
+                threat_type="port_scan",
+                reason=f"unique_ports({unique_ports})>threshold({NETWORK_THRESHOLDS['port_scan']['unique_ports']})",
+                threshold_exceeded="unique_ports",
+                source_ip=source_ip
+            ).inc()
+            
+            FEATURE_THRESHOLD_VIOLATIONS.labels(
+                feature_name="unique_ports",
+                threat_type="port_scan",
+                violation_severity="high" if unique_ports > 50 else "medium"
+            ).inc()
+            
+            RULE_ENGINE_TRIGGERS.labels(
+                engine_type="network",
+                rule_name="port_scan_detection",
+                confidence_level="high"
+            ).inc()
+            
             return [("port_scan", THREAT_CONFIDENCE_MAPPING["port_scan"])]
         return []
     
@@ -64,9 +87,31 @@ class NetworkRuleEngine(BaseRuleEngine):
     def _detect_data_exfiltration(self, data: Dict[str, float], tcp_ratio: float) -> List[Tuple[str, float]]:
         """Detect data exfiltration attempts."""
         bps = data.get("bytes_per_second", 0)
+        source_ip = data.get("source_ip", "unknown")
         
         if (bps > NETWORK_THRESHOLDS["data_exfiltration"]["bytes_per_second"] and
             tcp_ratio > NETWORK_THRESHOLDS["data_exfiltration"]["tcp_ratio"]):
+            
+            # Log detection reasoning
+            DETECTION_REASON.labels(
+                threat_type="data_exfiltration",
+                reason=f"high_tcp_transfer_rate({bps/1_000_000:.1f}MB/s)>threshold({NETWORK_THRESHOLDS['data_exfiltration']['bytes_per_second']/1_000_000}MB/s)",
+                threshold_exceeded="bytes_per_second",
+                source_ip=source_ip
+            ).inc()
+            
+            FEATURE_THRESHOLD_VIOLATIONS.labels(
+                feature_name="bytes_per_second",
+                threat_type="data_exfiltration", 
+                violation_severity="critical" if bps > 50_000_000 else "high"
+            ).inc()
+            
+            RULE_ENGINE_TRIGGERS.labels(
+                engine_type="network",
+                rule_name="data_exfiltration_detection",
+                confidence_level="high"
+            ).inc()
+            
             return [("data_exfiltration", THREAT_CONFIDENCE_MAPPING["data_exfiltration"])]
         return []
     

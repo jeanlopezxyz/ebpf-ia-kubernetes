@@ -398,6 +398,151 @@
         }
       },
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40}
+    },
+    {
+      "id": 15,
+      "title": "🔍 Why Threats Were Detected",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "topk(20, ml_detector_detection_reason_total)",
+          "refId": "A",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "displayMode": "list",
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 5},
+              {"color": "red", "value": 15}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "threat_type"},
+            "properties": [
+              {"id": "displayName", "value": "🚨 Threat Type"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "reason"},
+            "properties": [
+              {"id": "displayName", "value": "📋 Detection Reason"},
+              {"id": "custom.width", "value": 400}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "threshold_exceeded"},
+            "properties": [
+              {"id": "displayName", "value": "🎯 Threshold"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "source_ip"},
+            "properties": [
+              {"id": "displayName", "value": "🌐 Source IP"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Value"},
+            "properties": [
+              {"id": "displayName", "value": "🔢 Count"}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 48}
+    },
+    {
+      "id": 16,
+      "title": "⚙️ ML Model Decision Breakdown",
+      "type": "bargauge",
+      "targets": [
+        {
+          "expr": "ml_detector_model_decision_breakdown",
+          "refId": "A",
+          "legendFormat": "{{model_name}} - {{threat_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 0.3},
+              {"color": "orange", "value": 0.7},
+              {"color": "red", "value": 0.9}
+            ]
+          },
+          "unit": "percentunit",
+          "displayName": "Model Score",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 60}
+    },
+    {
+      "id": 17,
+      "title": "📊 Feature Threshold Violations",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "ml_detector_threshold_violations_total",
+          "refId": "A",
+          "legendFormat": "{{feature_name}} ({{violation_severity}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 60}
+    },
+    {
+      "id": 18,
+      "title": "🎯 Rule Engine Performance",
+      "type": "timeseries", 
+      "targets": [
+        {
+          "expr": "rate(ml_detector_rule_triggers_total[5m])",
+          "refId": "A",
+          "legendFormat": "{{engine_type}} - {{rule_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 68}
     }
   ]
 }
