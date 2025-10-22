@@ -20,6 +20,7 @@ from models.statistical import StatisticalAnomalyDetector
 from rules.network_rules import NetworkRuleEngine
 from rules.user_behavior_rules import UserBehaviorRuleEngine
 from rules.process_monitor_rules import ProcessMonitorRuleEngine
+from rules.immediate_threat_engine import ImmediateThreatEngine
 from constants import (
     TRAINING_CONFIG, WINDOW_SIZES, CONSENSUS_THRESHOLDS,
     IP_SUSPICIOUS_THRESHOLD, USERNAME_TYPE_ENCODING
@@ -82,6 +83,7 @@ class ThreatDetector:
         self.network_rules = NetworkRuleEngine()
         self.user_behavior_rules = UserBehaviorRuleEngine()
         self.process_monitor_rules = ProcessMonitorRuleEngine()
+        self.immediate_threat_engine = ImmediateThreatEngine()  # ZERO-DAY PROTECTION
         
         # Setup
         os.makedirs(self.model_path, exist_ok=True)
@@ -133,7 +135,10 @@ class ThreatDetector:
             attacking_ips = self._identify_attacking_ips(data)
             self._update_ip_metrics(data)
             
-            # Check for baseline deviations in whitelisted IPs FIRST
+            # IMMEDIATE PROTECTION - Always runs, no training required
+            immediate_threats = self.immediate_threat_engine.detect(data)
+            
+            # Check for baseline deviations in whitelisted IPs
             baseline_threats = self._detect_baseline_deviations(data)
             
             # Rule-based detection (fast) - select appropriate engine
@@ -141,15 +146,20 @@ class ThreatDetector:
             
             # ML-based detection (comprehensive) - but skip if IP is whitelisted AND within baseline
             source_ip = data.get("source_ip", "unknown")
-            if source_ip in self.legitimate_ips and not baseline_threats:
-                # IP is whitelisted and behaving normally - skip ML detection
+            if source_ip in self.legitimate_ips and not baseline_threats and not immediate_threats:
+                # IP is whitelisted, behaving normally, and no immediate threats - skip ML detection
                 ml_threats = []
                 logger.info(f"🏷️ WHITELIST_BYPASS: Skipping ML detection for legitimate IP {source_ip}")
             else:
-                ml_threats = self._detect_with_ml_ensemble(features)
+                # Run ML detection if models are trained, otherwise rely on rules + immediate detection
+                if self._any_model_trained():
+                    ml_threats = self._detect_with_ml_ensemble(features)
+                else:
+                    ml_threats = []
+                    logger.info(f"🧠 ML_NOT_READY: Models not trained yet, using rules + immediate detection only")
             
-            # Combine results - baseline threats have HIGHEST priority
-            all_threats = baseline_threats + rule_threats + ml_threats
+            # Combine results - IMMEDIATE threats have HIGHEST priority
+            all_threats = immediate_threats + baseline_threats + rule_threats + ml_threats
             
             if all_threats:
                 max_confidence = max(threat[1] for threat in all_threats)
@@ -363,6 +373,12 @@ class ThreatDetector:
             "statistical_trained": 1.0 if self.statistical_detector.is_trained() else 0.0
         }
     
+    def _any_model_trained(self) -> bool:
+        """Check if any ML model is trained and ready for use."""
+        return (self.spatial_detector.is_trained() or 
+                self.temporal_detector.is_trained() or 
+                self.statistical_detector.is_trained())
+    
     def _start_background_training(self) -> None:
         """Start background training thread."""
         def training_loop():
@@ -488,6 +504,8 @@ class ThreatDetector:
                         self.ip_confidence_scores[source_ip] = clean_ratio
                         # Calculate baseline behavior for new whitelisted IP
                         self._calculate_ip_baseline(source_ip)
+                        # Sync with immediate threat engine
+                        self.immediate_threat_engine.add_known_good_ip(source_ip)
                         logger.info(f"🏷️ WHITELIST: Added {source_ip} to legitimate IPs (clean ratio: {clean_ratio:.2%})")
                 
                 # Update baseline for existing whitelisted IPs
@@ -551,6 +569,8 @@ class ThreatDetector:
                     del self.ip_confidence_scores[ip]
                     if ip in self.ip_baselines:
                         del self.ip_baselines[ip]
+                    # Sync with immediate threat engine
+                    self.immediate_threat_engine.remove_known_good_ip(ip)
                     logger.warning(f"🚫 WHITELIST_REMOVED: {ip} removed due to low confidence")
     
     def _detect_baseline_deviations(self, data: Dict[str, float]) -> List[Tuple[str, float]]:
