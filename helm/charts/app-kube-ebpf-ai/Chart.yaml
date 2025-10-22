@@ -20,7 +20,7 @@ maintainers:
     email: team@ebpf-ai.local
 dependencies:
   - name: redis
-    version: "17.15.6"
+    version: "20.3.0"
     repository: "https://charts.bitnami.com/bitnami"
     condition: redis.enabled
 annotations:

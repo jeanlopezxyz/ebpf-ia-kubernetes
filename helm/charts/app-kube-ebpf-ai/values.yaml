@@ -24,7 +24,7 @@ mlDetector:
   name: ml-detector
   replicaCount: 1  # Images are now available
   image:
-    repository: "your-registry/ml-detector"  # Change to your container registry
+    repository: "quay.io/jealopez/ml-detector"  # Using working registry
     tag: "latest"
     pullPolicy: IfNotPresent
     # Ejemplo de imagen con GPU (cuando habilites GPU):
@@ -101,9 +101,9 @@ ebpfMonitor:
   name: ebpf-monitor
   replicaCount: 1  # Images are now available
   image:
-    repository: "your-registry/ebpf-monitor"  # Change to your container registry
+    repository: "quay.io/jealopez/ebpf-monitor"  # Using working registry
     tag: "latest"
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     
   service:
     type: ClusterIP
@@ -166,7 +166,7 @@ networkPolicy:
 
 # Redis Configuration (Dependency)
 redis:
-  enabled: true
+  enabled: false  # Disabled due to image availability issues
   auth:
     enabled: false
   master:
